@@ -1,0 +1,33 @@
+<!-- (c) Alexandre Fenyo 2012, 2013, 2014, 2015, 2016 - alex@fenyo.net - http://fenyo.net - GPLv3 licensed -->
+<?xml version="1.0" encoding="utf-8"?>
+<s:SkinnablePopUpContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+						   xmlns:s="library://ns.adobe.com/flex/spark"
+						   skinClass="net.fenyo.mail4hotspot.gui.MobileSkinnablePopUpContainerSkin">
+	<!-- x="70" y="300" -->
+	
+	<s:VGroup paddingTop="8" paddingBottom="8" paddingLeft="8" paddingRight="8" horizontalAlign="center">
+		
+		<s:Label textAlpha="1" color="#FFFFFF" backgroundAlpha="0"
+				 fontSize="{ parentApplication.labelFontSize }"
+				 text="{ resourceManager.getString('localizedContent', 'AttachAccountView_popup_login_header') }">
+			<s:filters>
+				<s:DropShadowFilter alpha=".5" distance="3" angle="45"/>
+			</s:filters>
+		</s:Label>
+		
+		<s:Rect height="5"/>
+		<s:Label id="label" fontSize="{ parentApplication.smallLabelFontSize }"
+				 text="{ resourceManager.getString('localizedContent', 'AttachAccountView_popup_login') }"/>
+
+		<s:Line width="100%">
+			<s:stroke><s:SolidColorStroke color="0x000000" weight="1" joints="miter"/></s:stroke>
+		</s:Line>
+		
+		<s:HGroup>
+			<s:Button fontSize="{ parentApplication.smallLabelFontSize }"
+					  label="{ resourceManager.getString('localizedContent', 'AttachAccountView_popup_login_button') }" click="this.close()"/>
+		</s:HGroup>
+		
+		
+	</s:VGroup>  
+</s:SkinnablePopUpContainer>

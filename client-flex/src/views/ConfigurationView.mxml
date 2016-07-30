@@ -1,0 +1,244 @@
+<!-- (c) Alexandre Fenyo 2012, 2013, 2014, 2015, 2016 - alex@fenyo.net - http://fenyo.net - GPLv3 licensed -->
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009"
+		xmlns:mx="library://ns.adobe.com/flex/mx"
+		xmlns:s="library://ns.adobe.com/flex/spark"
+		creationComplete="configurationView_creationCompleteHandler(event)"
+		viewActivate="configurationView_viewActivateHandler(event)">
+	<!-- remplacé par <titleContent/> : title="{ resourceManager.getString('localizedContent', 'Configuration') }" -->
+	<!-- creationComplete : peut-être appeler son contenu avant la fin de création -->
+	
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+			import mx.core.*;
+			import mx.events.*;
+			import mx.managers.PopUpManager;
+			
+			import net.fenyo.mail4hotspot.gui.*;
+			import net.fenyo.mail4hotspot.service.*;
+			import net.fenyo.mail4hotspot.tools.*;
+			import net.fenyo.mail4hotspot.dns.*;
+			
+			import spark.components.ViewNavigator;
+			import spark.events.IndexChangeEvent;
+			import spark.events.ViewNavigatorEvent;
+			import spark.managers.*;
+			
+			private function configurationView_creationCompleteHandler(event:FlexEvent) : void {
+				// picture_test_1.source = Main.PictureTest1;
+
+				// Alex
+				left_screw.source = Main.PictureScrew640;
+				left_screw.scaleX = left_screw.scaleY = left_screw.scaleZ = parentApplication.applicationDPI / 640;
+				right_screw.source = Main.PictureScrew640;
+				right_screw.scaleX = right_screw.scaleY = right_screw.scaleZ = parentApplication.applicationDPI / 640;
+				text_config.source = Main.TextConfig640;
+				text_config.scaleX = text_config.scaleY = text_config.scaleZ = parentApplication.applicationDPI / 640;
+			}
+			
+			private function configurationView_viewActivateHandler(event:ViewNavigatorEvent) : void { }
+			
+			protected function button1_clickHandler(event:MouseEvent):void {
+				var popUp : PopUpLogout = new PopUpLogout();
+				popUp.open(this, true);
+				popUp.label.width = width * 2 / 3;
+				PopUpManager.centerPopUp(popUp);
+			}
+			
+			protected function button2_clickHandler(event:MouseEvent):void {
+				navigator.pushView(views.SetProviderView);
+			}
+			
+			protected function button3_clickHandler(event:MouseEvent):void {
+				navigator.pushView(views.SetLocaleView);
+			}
+
+			protected function button4_clickHandler(event:MouseEvent):void {
+				// set production domain
+				Main.release_info_production_domain = true;
+			}
+
+			protected function button5_clickHandler(event:MouseEvent):void {
+				// set debug domain
+				Main.release_info_production_domain = false;
+			}
+
+			protected function button6_clickHandler(event:MouseEvent):void {
+				navigator.pushView(views.PortRedirectionView);
+			}
+
+			protected function button7_clickHandler(event:MouseEvent):void {
+				DnsQuerierFactory.debugMemory();
+				HttpProxy.debugMemory();
+			}
+
+		]]>
+	</fx:Script>
+	
+	<s:layout>
+		<s:VerticalLayout paddingTop="0" paddingBottom="0" paddingLeft="0" paddingRight="0" gap="2" 
+						  horizontalAlign="center" verticalAlign="top"/>
+	</s:layout>
+	
+	<!--	<s:navigationContent>
+	<s:Button label="Back"/>
+	</s:navigationContent> -->
+	
+	<s:titleContent>
+		<s:Graphic x="0" y="0">             
+			<s:BitmapImage id="left_screw" alpha="{ Main.new_skin ? 1 : .5 }" fillMode="clip"/>
+		</s:Graphic>
+		<s:HGroup width="100%" height="100%" horizontalAlign="center" verticalAlign="middle" gap="0">
+			<s:BitmapImage id="text_config" alpha="{ Main.new_skin ? 1 : .4 }" fillMode="clip"/>
+		</s:HGroup>
+		<s:Graphic x="0" y="0">             
+			<s:BitmapImage id="right_screw" alpha="{ Main.new_skin ? 1 : .5 }"  fillMode="clip"/>
+		</s:Graphic>
+	</s:titleContent>
+	
+	<!--	<s:actionContent>
+	<s:Button label="Action"/>
+	</s:actionContent> -->
+	
+	<s:SkinnableContainer width="100%" height="100%" skinClass="net.fenyo.mail4hotspot.gui.MobileSkinnableContainerSkin">
+		<s:Scroller left="5" right="5" top="5" bottom="5" width="100%" height="100%">
+			
+			<s:VGroup paddingLeft="5" paddingRight="5" paddingTop="5" paddingBottom="5" width="100%" height="100%">
+				
+				<s:Label fontStyle="italic" textAlpha=".5" color="#FFFFFF" backgroundAlpha=".5" backgroundColor="#080000" width="100%" fontSize="{ parentApplication.headerFontSize }"
+						 text="{ resourceManager.getString('localizedContent', 'ConfigurationView_mail_header') }">
+					<s:filters>
+						<s:DropShadowFilter alpha=".5" distance="3" angle="45"/>
+					</s:filters>
+				</s:Label>
+
+				<!--
+				<s:HGroup verticalAlign="bottom">
+				<s:BitmapImage id="picture_test_1" fillMode="clip"/>
+				<s:Label id="label_provider" width="100%"  fontSize="{ parentApplication.labelFontSize }"
+						 text="{ resourceManager.getString('localizedContent', 'ConfigurationView_mail') + ' ' +
+						 parentApplication.persistenceManager.getProperty('provider') }"/>
+				</s:HGroup>
+				-->
+
+				<s:Button width="100%" fontSize="{ parentApplication.buttonFontSize }"
+						  label="{ resourceManager.getString('localizedContent', 'ConfigurationView_mail_button') }"
+						  click="button2_clickHandler(event)">
+					<s:filters>
+						<s:DropShadowFilter alpha=".5" distance="3" angle="45"/>
+					</s:filters>
+				</s:Button>
+
+				<s:Rect height="10"/>
+				<s:Line width="100%">
+					<s:stroke><s:SolidColorStroke color="0x000000" weight="1" joints="miter"/></s:stroke>
+				</s:Line>
+				
+				<s:Label fontStyle="italic" textAlpha=".5" color="#FFFFFF" backgroundAlpha=".5" backgroundColor="#080000" width="100%" fontSize="{ parentApplication.headerFontSize }"
+						 text="{ resourceManager.getString('localizedContent', 'ConfigurationView_port_redirection') }">
+					<s:filters>
+						<s:DropShadowFilter alpha=".5" distance="3" angle="45"/>
+					</s:filters>
+				</s:Label>
+				
+				<s:Button width="100%" fontSize="{ parentApplication.buttonFontSize }"
+						  label="{ resourceManager.getString('localizedContent', 'ConfigurationView_configure_ports') }"
+						  click="button6_clickHandler(event)">
+					<s:filters>
+						<s:DropShadowFilter alpha=".5" distance="3" angle="45"/>
+					</s:filters>
+				</s:Button>
+
+				<s:Rect height="10"/>
+				<s:Line width="100%">
+					<s:stroke><s:SolidColorStroke color="0x000000" weight="1" joints="miter"/></s:stroke>
+				</s:Line>
+				
+				<s:Label fontStyle="italic" textAlpha=".5" color="#FFFFFF" backgroundAlpha=".5" backgroundColor="#080000" width="100%" fontSize="{ parentApplication.headerFontSize }"
+						 text="{ resourceManager.getString('localizedContent', 'ConfigurationView_documentation') }">
+					<s:filters>
+						<s:DropShadowFilter alpha=".5" distance="3" angle="45"/>
+					</s:filters>
+				</s:Label>
+				
+				<s:Button width="100%" fontSize="{ parentApplication.buttonFontSize }"
+						  label="{ resourceManager.getString('localizedContent', 'ConfigurationView_get_documentation') }"
+						  click="navigateToURL(new URLRequest('http://www.vpnoverdns.com/doc.html'));">
+					<s:filters>
+						<s:DropShadowFilter alpha=".5" distance="3" angle="45"/>
+					</s:filters>
+				</s:Button>
+
+				<s:Rect height="10"/>
+				<s:Line width="100%">
+					<s:stroke><s:SolidColorStroke color="0x000000" weight="1" joints="miter"/></s:stroke>
+				</s:Line>
+
+				<s:Label fontStyle="italic" textAlpha=".5" color="#FFFFFF" backgroundAlpha=".5" backgroundColor="#080000" width="100%" fontSize="{ parentApplication.headerFontSize }"
+						 text="{ resourceManager.getString('localizedContent', 'ConfigurationView_i18n_header') }">
+					<s:filters>
+						<s:DropShadowFilter alpha=".5" distance="3" angle="45"/>
+					</s:filters>
+				</s:Label>
+				
+				<s:Label id="label_locale" width="100%"  fontSize="{ parentApplication.labelFontSize }"
+						 text="{ resourceManager.getString('localizedContent', 'ConfigurationView_i18n') + ' ' +
+						 resourceManager.getString('localizedContent', 'currentLanguage') }"/>
+				<s:Button width="100%" fontSize="{ parentApplication.buttonFontSize }"
+						  label="{ resourceManager.getString('localizedContent', 'ConfigurationView_i18n_button') }"
+						  click="button3_clickHandler(event)">
+					<s:filters>
+						<s:DropShadowFilter alpha=".5" distance="3" angle="45"/>
+					</s:filters>
+				</s:Button>
+				
+				<s:Rect height="10"/>
+				<s:Line width="100%">
+					<s:stroke><s:SolidColorStroke color="0x000000" weight="1" joints="miter"/></s:stroke>
+				</s:Line>
+				
+				<s:Label fontStyle="italic" textAlpha=".5" color="#FFFFFF" backgroundAlpha=".5" backgroundColor="#080000" width="100%" fontSize="{ parentApplication.headerFontSize }"
+						 text="{ resourceManager.getString('localizedContent', 'ConfigurationView_account_header') }">
+					<s:filters>
+						<s:DropShadowFilter alpha=".5" distance="3" angle="45"/>
+					</s:filters>
+				</s:Label>
+				
+				<s:Label id="label" width="100%" fontSize="{ parentApplication.labelFontSize }"
+						 text="{ resourceManager.getString('localizedContent', 'ConfigurationView_account') + ' ' + parentApplication.persistenceManager.getProperty('login') }"/>
+				<s:Button width="100%" fontSize="{ parentApplication.buttonFontSize }"
+						  label="{ resourceManager.getString('localizedContent', 'ConfigurationView_account_button') }"
+						  click="button1_clickHandler(event)">
+					<s:filters>
+						<s:DropShadowFilter alpha=".5" distance="3" angle="45"/>
+					</s:filters>
+				</s:Button>
+				
+				<s:Rect visible="{ Main.release_info_debug_tools }" height="200"/>
+				<s:Label visible="{ Main.release_info_debug_tools }" width="100%" fontSize="{ parentApplication.labelFontSize }"
+						 text="production domain: { Main.release_info_production_domain }"/>
+				<s:Button visible="{ Main.release_info_debug_tools }" width="100%" label="debug: set production domain" click="button4_clickHandler(event)">
+					<s:filters>
+						<s:DropShadowFilter alpha=".5" distance="3" angle="45"/>
+					</s:filters>
+				</s:Button>
+				<s:Button visible="{ Main.release_info_debug_tools }" width="100%" label="debug: set debug domain" click="button5_clickHandler(event)">
+					<s:filters>
+						<s:DropShadowFilter alpha=".5" distance="3" angle="45"/>
+					</s:filters>
+				</s:Button>
+				<s:Button visible="{ Main.release_info_debug_tools }" width="100%" label="debug: check mem" click="button7_clickHandler(event)">
+					<s:filters>
+						<s:DropShadowFilter alpha=".5" distance="3" angle="45"/>
+					</s:filters>
+				</s:Button>
+
+				<!-- pour faire apparaître la scrollbar dans tous les cas
+				<s:Rect height="600"/>  -->
+
+			</s:VGroup>
+		</s:Scroller>
+	</s:SkinnableContainer>
+	
+</s:View>

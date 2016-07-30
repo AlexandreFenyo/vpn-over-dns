@@ -1,0 +1,55 @@
+<web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
+         version="3.1">
+
+    <display-name>Mgmt web module</display-name>
+    <context-param>
+        <param-name>contextConfigLocation</param-name>
+        <param-value>/WEB-INF/spring-business-context.xml</param-value>
+    </context-param>
+    
+    <listener>
+        <listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
+    </listener>
+    <servlet>
+        <servlet-name>spring-mvc</servlet-name>
+        <servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+		<load-on-startup>1</load-on-startup>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>spring-mvc</servlet-name>
+        <url-pattern>/app/*</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>browser</servlet-name>
+        <servlet-class>net.fenyo.mail4hotspot.web.BrowserServlet</servlet-class>
+		<load-on-startup>1</load-on-startup>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>browser</servlet-name>
+        <url-pattern>/browser/*</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>gmail-oauth-step-1</servlet-name>
+        <servlet-class>net.fenyo.mail4hotspot.web.GMailOAuthStep1Servlet</servlet-class>
+		<load-on-startup>1</load-on-startup>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>gmail-oauth-step-1</servlet-name>
+        <url-pattern>/oauth/*</url-pattern>
+    </servlet-mapping>
+
+        <servlet>
+        <servlet-name>yahoo-oauth-step-1</servlet-name>
+        <servlet-class>net.fenyo.mail4hotspot.web.YahooOAuthStep1Servlet</servlet-class>
+		<load-on-startup>1</load-on-startup>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>yahoo-oauth-step-1</servlet-name>
+        <url-pattern>/yoauth/*</url-pattern>
+    </servlet-mapping>
+    
+</web-app>

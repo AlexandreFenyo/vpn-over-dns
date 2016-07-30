@@ -1,0 +1,136 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>fr.fenyo</groupId>
+  <artifactId>mail4hotspot-pom-root</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
+  <packaging>pom</packaging>
+    <properties>
+    
+    <!-- preventing "[WARNING] Using platform encoding (Cp1252 actually) to copy filtered resources, i.e. build is platform dependent!" form maven -->
+	    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    
+                <!-- Spring version -->
+        <version.spring>3.1.0.RELEASE</version.spring>
+
+        <!-- Spring Third Party dependencies -->
+        <version.aopalliance>1.0</version.aopalliance>
+        
+        <!-- Third Party dependencies -->
+        <version.standard.taglibs>1.1.2</version.standard.taglibs>
+        <version.commons.logging>1.2</version.commons.logging>
+        <version.commons.dbcp>1.4</version.commons.dbcp>
+        <version.commons.lang>3.1</version.commons.lang>
+
+        <!-- JBoss AS plugin for deployment -->
+        <version.jboss.as.maven.plugin>7.0.2.Final</version.jboss.as.maven.plugin>
+
+		<!--  version JSTL -->
+		<version.jstl>1.2</version.jstl>
+
+    </properties>
+
+    <dependencyManagement>
+
+		<dependencies>
+		
+		<dependency>
+			<groupId>javax.mail</groupId>
+			<artifactId>javax.mail-api</artifactId>
+			<version>1.5.4</version>
+		</dependency>
+		<dependency>
+		    <groupId>com.sun.mail</groupId>
+    		<artifactId>javax.mail</artifactId>
+		    <version>1.5.3</version>
+		</dependency>
+		
+		
+			<!-- Define the version of JBoss' Java EE 6 APIs we want to import. Any
+                dependencies from org.jboss.spec will have their version defined by this
+                BOM -->
+            <!-- JBoss distributes a complete set of Java EE 6 APIs including a Bill
+                of Materials (BOM). A BOM specifies the versions of a "stack" (or a collection)
+                of artifacts. We use this here so that we always get the correct versions
+                of artifacts. Here we use the jboss-javaee-web-6.0 stack (you can read this
+                as the JBoss stack of the Java EE Web Profile 6 APIs), and we use version
+                2.0.0.Beta1 which is the latest release of the stack. You can actually use
+                this stack with any version of JBoss AS that implements Java EE 6, not just
+                JBoss AS 7! -->
+            <dependency>
+                <groupId>org.jboss.spec</groupId>
+                <artifactId>jboss-javaee-web-6.0</artifactId>
+                <version>3.0.0.Beta1</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-framework-bom</artifactId>
+            <version>4.2.2.RELEASE</version>
+            <type>pom</type>
+            <scope>import</scope>
+        </dependency>
+
+        <dependency>
+          <groupId>org.apache.logging.log4j</groupId>
+          <artifactId>log4j-bom</artifactId>
+          <version>2.4.1</version>
+          <type>pom</type>
+          <scope>import</scope>
+        </dependency>
+
+<!--  
+ <dependency>
+          <groupId>org.apache.logging.log4j</groupId>
+          <artifactId>log4j</artifactId>
+          <version>2.4.1</version>
+        </dependency>
+ --> 
+            <!-- Third Party dependencies -->
+<!--             <dependency>
+                <groupId>aopalliance</groupId>
+                <artifactId>aopalliance</artifactId>
+                <version>${version.aopalliance}</version>
+            </dependency>
+ -->
+ 			<dependency>
+                <groupId>taglibs</groupId>
+                <artifactId>standard</artifactId>
+                <version>${version.standard.taglibs}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>commons-logging</groupId>
+                <artifactId>commons-logging</artifactId>
+                <version>${version.commons.logging}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>commons-dbcp</groupId>
+                <artifactId>commons-dbcp</artifactId>
+                <version>${version.commons.dbcp}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-lang3</artifactId>
+                <version>${version.commons.lang}</version>
+            </dependency>
+
+			<!-- version a verifier -->
+			<dependency>
+				<groupId>javax.servlet</groupId>
+				<artifactId>jstl</artifactId>
+				<version>${version.jstl}</version>
+			</dependency>
+
+ 		<dependency>
+			<groupId>javax.servlet</groupId>
+			<artifactId>servlet-api</artifactId>
+			<version>2.5</version>
+		</dependency>
+        </dependencies>
+    </dependencyManagement>
+
+</project>

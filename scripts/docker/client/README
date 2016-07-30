@@ -1,0 +1,2 @@
+docker run -t -i -v /tmp/.vpnoverdns:/root/.vpnoverdns fenyo/vpnoverdns vpnoverdns.pl -i fenyoa PASSWORD
+docker run -t -i -v /tmp/.vpnoverdns:/root/.vpnoverdns fenyo/vpnoverdns vpnoverdns.pl -S ovh.fenyo.net -o '-l root'

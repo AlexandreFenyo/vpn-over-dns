@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Graphic version="2.0"
+	scaleGridLeft="9" scaleGridTop="9"
+	xmlns="http://ns.adobe.com/fxg/2008" xmlns:ATE="http://ns.adobe.com/ate/2009" xmlns:ai="http://ns.adobe.com/ai/2009" xmlns:d="http://ns.adobe.com/fxg/2008/dt" xmlns:flm="http://ns.adobe.com/flame/2008">
+        <Group>
+          <Rect x="2.5" y="2.5" width="202" height="87" radiusX="14.4756" radiusY="14.4756" ai:seqID="5">
+            <fill>
+              <LinearGradient x="101" y="87" scaleX="87" rotation="270">
+              <GradientEntry ratio="0" color="#BCBCBC"/>
+              <GradientEntry ratio="0.5" color="#54555E"/>
+              <GradientEntry ratio="1" color="#54555E"/>
+              </LinearGradient>
+            </fill>
+	          <stroke>
+			<SolidColorStroke weight="2" caps="none" joints="miter" miterLimit="10" color="#4C391E"/>
+        	  </stroke>
+          </Rect>
+        <Path alpha=".8" x="4.5" y="5.5" blendMode="lighten" winding="nonZero" ai:seqID="7" data="M185.5 0 12.5 0C5.87305 0 0 4.87305 0 11.5L0 21.9385C27 33.498 60.8008 40.5 98.5 40.5 136.199 40.5 171 33.498 197 21.9385L197 11.5C197 4.87305 192.127 0 185.5 0Z">
+          <fill>
+            <RadialGradient x="99" y="-81.75" scaleX="571.005" scaleY="571.005">
+              <GradientEntry ratio="0.370466" color="#E3E3E3"/>
+              <GradientEntry ratio="0.579093" color="#BCBCBC"/>
+            </RadialGradient>
+          </fill>
+        </Path>
+      </Group>
+</Graphic>

@@ -1,0 +1,123 @@
+
+layout d'un mx:form:
+http://livedocs.adobe.com/flex/3/html/help.html?content=layouts_08.html
+pour le composant spark : tout est dans la doc officielle de Flex (flex help de 34Mo, page 457)
+
+scroller :
+http://help.adobe.com/en_US/flex/mobileapps/WSd81c90855964c1b7-1588dc2312aa4a673bf-7fff.html
+
+format des fichiers embedded acceptés :
+en bas de http://livedocs.adobe.com/flex/3/html/help.html?content=embed_2.html
+
+icone dans l'actionbar :
+http://help.adobe.com/fr_FR/flex/mobileapps/WS77c1dbb1bd80d383527e1a6412a8a5d909a-8000.html
+
+skinner le tabbedviewnavigator :
+http://blogs.adobe.com/jasonsj/tag/tabbedviewnavigator
+
+multi résolutions :
+http://www.adobe.com/devnet/flex/articles/mobile-skinning-part1.html
+http://www.adobe.com/devnet/flex/articles/mobile-skinning-part2.html
+http://www.adobe.com/devnet/flex/articles/mobile-skinning-part3.html
+dont densité et résolution des principaux devices : http://www.adobe.com/devnet/flex/articles/mobile-skinning-part2.html
+
+pb des scrollbars :
+http://help.adobe.com/en_US/flex/using/WS03d33b8076db57b9466e6a52123e854e5d5-8000.html
+
+-----
+On veut habiller (skinner) spark.components.SkinnableContainer
+
+Cas Desktop :
+on crée un habillage (skin) MXML comme suit :
+  - package net.fenyo.mail4hotspot.gui
+  - nom DesktopSkinnableContainerSkin
+  - composant hôte spark.components.SkinnableContainer
+  - à partir d'une copie de spark.skins.spark.SkinnableContainerSkin
+
+Cas mobile :
+on crée un habillage (skin) action script comme suit :
+  - package net.fenyo.mail4hotspot.gui
+  - nom MobileSkinnableContainerSkin
+  - à partir d'une copie de /cygdrive/c/Program Files (x86)/Adobe/Adobe Flash Builder 4.6/sdks/4.6.0/frameworks/projects/mobiletheme/src/spark/skins/mobile/SkinnableContainerSkin.as
+
+-----
+
+skins illustrator libres :
+http://speckyboy.com/2011/11/02/40-new-web-mobile-and-application-gui-kits/
+http://speckyboy.com/2010/09/01/illustrator-template-toolbox-for-web-mobile-and-app-developers/
+http://speckyboy.com/2010/04/30/iphone-and-ipad-development-gui-kits-stencils-and-icons/
+http://speckyboy.com/2010/05/10/android-app-developers-gui-kits-icons-fonts-and-tools/
+
+toutes petites icones libres et avec droits de faire du commerce :
+http://www.famfamfam.com/lab/icons/silk/
+
+-----
+
+dans la liste des mails, mettre une icone :
+http://www.flex-tutorial.fr/2011/05/08/air-mobile-les-itemrenderer-de-list-labelitemrenderer-iconitemrenderer/
+
+-----
+
+ex d'inclusion de bitmap dans Flex :
+à la fin de http://help.adobe.com/en_US/FlashPlatform/reference/actionscript/3/spark/primitives/BitmapImage.html#includeExamplesSummary
+
+-----
+
+vumeter:
+http://www.google.fr/imgres?start=274&um=1&hl=fr&sa=N&rlz=1T4GGNI_frFR476FR477&tbm=isch&tbnid=k3Iecz25T8j-cM:&imgrefurl=http://uidetails.com/&docid=nNGv09oJO6PTqM&imgurl=http://uidetails.com/wp-content/uploads/2012/02/vu-meter-final-349x243.png&w=349&h=243&ei=BP8BUJDKEuas0QWE1uCTBw&zoom=1&iact=hc&vpx=371&vpy=294&dur=6119&hovh=187&hovw=269&tx=158&ty=104&sig=103078107972209149645&page=6&tbnh=153&tbnw=203&ndsp=57&ved=1t:429,r:20,s:274,i:68&biw=1920&bih=969
+
+
+-----
+
+export SVG :
+conserver les gradients sans les rasteriser
+save private data : non
+les 2 autres choix à cocher : non
+filters et grandients : maintent editability
+les deux autres choix dans une liste : automatique
+Puis supprimer viewHeight="200" viewWidth="200", <Library/>, ai:seqID="1" d:layerType="page" d:pageHeight="20" d:pageWidth="20" d:type="layer" d:userLabel="Artboard 1"
+rajouter scaleGridLeft="9" scaleGridTop="9" scaleGridRight="116" scaleGridBottom="51"
+supprimer les groupes imbriqués car c'est interdit avec les scaleGrid 
+
+exemples :
+C:\Program Files (x86)\Adobe\Adobe Flash Builder 4.6\sdks\4.6.0\frameworks\projects\mobiletheme\src\spark\skins\mobile240\assets
+C:\Program Files (x86)\Adobe\Adobe Flash Builder 4.6\sdks\4.6.0\frameworks\projects\mobiletheme\src\spark\skins\mobile240\assets\ButtonBarFirstButton_down.fxg
+pour tester avec un fxg existant de flex :
+var glossyButton : SpriteVisualElement = new ButtonBarFirstButton_down();
+addChildAt(glossyButton, 0);
+
+-------
+
+couleurs :
+              <GradientEntry ratio="0" color="#A18C66"/>
+              <GradientEntry ratio="1" color="#574122"/>
+              <GradientEntry ratio="0.370466" color="#F2D997"/>
+              <GradientEntry ratio="0.425189" color="#E9D090"/>
+              <GradientEntry ratio="0.477314" color="#CDB47B"/>
+              <GradientEntry ratio="0.528562" color="#9C8556"/>
+
+----
+icone downstream :
+dans illustrator, ouvrir la bibliothèque de symboles flèches, prendre cette flèche, la resizer, copier l'écran vers photoshop et redimensionner à 16 de hauteur
+
+créer une progress bar :
+http://help.adobe.com/en_US/flex/using/WS2db454920e96a9e51e63e3d11c0bf69084-7e3c.html
+penser à utiliser, pour les bords arrondis :
+					<s:BorderContainer width="90%" cornerRadius="10" backgroundColor="#C0C0C0" borderVisible="false">
+						<s:layout>
+							<s:HorizontalLayout 
+								paddingLeft="5" paddingRight="5" 
+								paddingTop="5" paddingBottom="5"/>
+						</s:layout>
+					</s:BorderContainer>
+=> faire deux status bar avec progress bar
+
+---------
+
+SKINs :
+
+le fond aluminium :
+bandeau du haut:  net/fenyo/mail4hotspot/gui/MobileActionBarSkin.as:              [Embed(source="assets/aluminium.png")]
+bandeau du bas:  net/fenyo/mail4hotspot/gui/MobileTabbedViewNavigatorTabBarSkin.as:              [Embed(source="assets/aluminium.png")]
+
+

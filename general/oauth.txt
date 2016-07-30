@@ -1,0 +1,362 @@
+chez Yahoo :
+	http://developer.yahoo.com/oauth/guide/oauth-auth-flow.html
+    http://developer.yahoo.com/bbauth/appreg.html
+
+enregistrer son app en tant que développeur :
+	https://developer.apps.yahoo.com/wsregapp/
+	alexandre.fenyo@yahoo.com
+web application : http://www.vpnoverdns.com/
+success url : http://www.vpnoverdns.com/mail4hotspot//yoauth/success
+contact@vpnoverdns.com
+Your application id is 1AcK77PIkY19hm97TksrPjF0KhlsHdgGcCSzioQiOw-- 
+For application entrypoint -> http://www.vpnoverdns.com/mail4hotspot//yoauth/success
+
+autre page pour enregistrer : https://developer.apps.yahoo.com/dashboard/createKey.html
+application name : VPNoverDNS
+application domain : http://www.vpnoverdns.com
+scope : le mail web services
+Consumer Key: dj0yJmk9UmZhMmthTU1EcVExJmQ9WVdrOWIxZEZaMWRGTldNbWNHbzlNVGMyTmprME5qSS0mcz1jb25zdW1lcnNlY3JldCZ4PTc2
+Application URL: http://www.vpnoverdns.com 
+App Domain: www.vpnoverdns.com
+VPNoverDNS Application ID: oWEgWE5
+  
+
+voir son app : https://developer.apps.yahoo.com/projects
+
+https://api.login.yahoo.com/oauth/v2/get_request_token
+
+
+----------------------
+
+authent chez Google
+
+// http://tools.ietf.org/html/rfc5849
+// https://developers.google.com/accounts/docs/OAuth2WebServer
+// https://developers.google.com/google-apps/gmail/oauth_overview
+// https://code.google.com/p/google-api-java-client/wiki/OAuth2Draft10
+// le precedent est deprecated, utiliser plutot :
+// https://code.google.com/p/google-api-java-client/wiki/OAuth2
+// qui est base sur :
+// http://code.google.com/p/google-oauth-java-client/wiki/OAuth2
+// et voir Command-line authorization code flow
+// http://code.google.com/p/oauth-signpost/
+//
+// https://developers.google.com/accounts/
+// https://developers.google.com/accounts/docs/OAuth2Login
+// https://developers.google.com/accounts/docs/OAuth2
+// http://code.google.com/p/google-mail-xoauth-tools/wiki/JavaSampleCode
+// http://code.google.com/p/google-mail-xoauth-tool-java-two-legged/
+// http://cakebaker.42dh.com/2011/01/10/2-legged-vs-3-legged-oauth/
+// le pb python fait ca : https://developers.google.com/gdata/articles/oauth
+
+// d'après xauth.py :
+//   scope : https://mail.google.com
+//   request token URL : https://www.google.com/accounts/OAuthGetRequestToken
+//   authorization token URL : https://www.google.com/a/%s/OAuthAuthorizeToken
+//   access token URL : https://www.google.com/accounts/OAuthGetAccessToken
+
+------------------------------------------
+avec OAUTH 2.0
+
+//on declare ici : https://code.google.com/apis/console/
+//Client ID: 458072371664.apps.googleusercontent.com 
+//Email address: 458072371664@developer.gserviceaccount.com 
+//Redirect URIs: https://www.vpnoverdns.com/mail4hotspot/oauthcb 
+//JavaScript origins: https://www.vpnoverdns.com 
+
+// dans les tests : penser à supprimer l'autorisation sur alexandre.fenyo2@gmail.com, c'est ça qui a débloqué...
+//utiliser firefox comme suit : (avec httpfox pour controler)
+//https://accounts.google.com/o/oauth2/auth?scope=https://mail.google.com/&redirect_uri=https://localhost/mail4hotspot/oauthcb&response_type=code&client_id=458072371664.apps.googleusercontent.com&access_type=offline&approval_prompt=force
+//
+//réponse :
+//code=4/jalJ7u-3zwEaK91R4xVjcvn0Ir1S.Es49WW208ioeOl05ti8ZT3b9s9NPcgI
+//
+//on copie dans le shell pour positionner code et on lance curl :
+//code=4/jalJ7u-3zwEaK91R4xVjcvn0Ir1S.Es49WW208ioeOl05ti8ZT3b9s9NPcgI
+//curl -v --data-urlencode code=$code --data-urlencode client_id=458072371664.apps.googleusercontent.com --data-urlencode client_secret=PASSWORD --data-urlencode redirect_uri=http://localhost/mail4hotspot/oauthcb2 --data-urlencode grant_type=authorization_code https://accounts.google.com/o/oauth2/token
+//
+//
+//CA marche dans le cas suivant (attention à l'URI de redirection) :
+//on efface l'autorisation
+//puis https://accounts.google.com/o/oauth2/auth?scope=https://mail.google.com/&redirect_uri=https://localhost/mail4hotspot/oauthcb&response_type=code&client_id=458072371664.apps.googleusercontent.com&access_type=offline&approval_prompt=force
+//curl -v --data-urlencode code=$code --data-urlencode client_id=458072371664.apps.googleusercontent.com --data-urlencode client_secret=PASSWORD --data-urlencode redirect_uri=https://localhost/mail4hotspot/oauthcb --data-urlencode grant_type=authorization_code https://accounts.google.com/o/oauth2/token
+//=> ca donne :
+//{
+//  "access_token" : "ya29.AHES6ZSR-QW2udhWoUrFwFkJiPqVelhX9eAN3HxhRJsq7s3_O4zXvA",
+//  "token_type" : "Bearer",
+//  "expires_in" : 3600,
+//  "refresh_token" : "1/WmieOxibw88V9ySCWYKDSkILAukSFJz50bRD3mIfJYw"
+//* Connection #0 to host accounts.google.com left intact
+//* Closing connection #0
+//}
+//
+//et la fois qui suit à nouveau le même curl : invalid grant
+//
+//révoquer un token : curl https://accounts.google.com/o/oauth2/revoke?token={token}
+//
+//1 code d'autorisation ne peut être utilisé qu'une fois !
+//
+//donc utiliser le refresh token :
+//refresh=1/WmieOxibw88V9ySCWYKDSkILAukSFJz50bRD3mIfJYw
+//curl -v --data-urlencode refresh_token=$refresh --data-urlencode client_id=458072371664.apps.googleusercontent.com --data-urlencode client_secret=PASSWORD --data-urlencode grant_type=refresh_token https://accounts.google.com/o/oauth2/token
+//
+//ca donne :
+//{
+//  "access_token" : "ya29.AHES6ZTXkWItXno_3OXE2BLuziOSh07tTa99vgKZvA4tHUlDutWYhA",
+//  "token_type" : "Bearer",
+//  "expires_in" : 3600
+//* Connection #0 to host accounts.google.com left intact
+//* Closing connection #0
+//}
+
+//<fenyo@gw> ./xoauth.py --generate_oauth_token --user=alexandre.fenyo@gmail.com
+//oauth_token: 4/0sZMvu3IGIGUd-sfMcgPv4v1ke4S
+//oauth_callback_confirmed: true
+//To authorize token, visit this url and follow the directions to generate a verification code:
+//  https://www.google.com/accounts/OAuthAuthorizeToken?oauth_token=4%2F0sZMvu3IGIGUd-sfMcgPv4v1ke4S
+//Enter verification code: G9WnsA7xcyAe6oUDXH5pYndT
+//oauth_token: 1/1SxkAUyIZBBT3ojm6rSvqFUttTMx19bJ8rwACsTl7Aw
+
+//If your application requires long-running access to user data through a Google API without the user being present, then use code.
+//
+//Avec response_type=token :
+//https://accounts.google.com/o/oauth2/auth?scope=https://mail.google.com/&redirect_uri=http://localhost/mail4hotspot/oauthcb&response_type=token&client_id=458072371664.apps.googleusercontent.com
+//=> access token
+//https://accounts.google.com/o/oauth2/approval?as=-2a85d5068a2a8150&hl=fr&xsrfsign=APsBz4gAAAAAUCrtzeHJNeNtwW6dN_RZwdqXPVoQvjyO
+//
+//Avec response_type=code :
+//https://accounts.google.com/o/oauth2/auth?scope=https://mail.google.com/&redirect_uri=http://localhost/mail4hotspot/oauthcb&response_type=code&client_id=458072371664.apps.googleusercontent.com
+//=> authorization code
+//http://localhost/mail4hotspot/oauthcb?code=4/MFGUHE8BPBXYAR-Ax0Rejw_-Aqtc.4q2wECZSIaQbOl05ti8ZT3bjVjRPcgI
+//authorization code : 4/MFGUHE8BPBXYAR-Ax0Rejw_-Aqtc.4q2wECZSIaQbOl05ti8ZT3bjVjRPcgI
+//donc on demande un authorization code et non un access token directement
+// (c'est ce qu'on appelle "web server" alors que le token directement c'est javascript)
+//et on aura un access token par la suite quand on voudra, grace a cet authorization code.
+//En effet :
+//This authorization code is redeemable for an access token and a refresh token which your application can then use to make appropriate Google API calls. Redeeming the authorization code for an access token requires server side code to include the client_id and client_secret parameters. See the Web Server documentation for more details (https://developers.google.com/accounts/docs/OAuth2WebServer)
+
+// Rajouter dans la requete : &access_type=offline
+//
+//access_type
+//online or offline
+//Indicates if your application needs to access a Google API when the user is not present at the browser. This parameter defaults to online. If your application needs to refresh access tokens when the user is not present at the browser, then use offline. This will result in your application obtaining a refresh token the first time your application exchanges an authorization code for a user. 
+//
+//approval_prompt
+//force or auto
+//Indicates if the user should be re-prompted for consent. The default is auto, so a given user should only see the consent page for a given set of scopes the first time through the sequence. If the value is force, then the user sees a consent page even if they have previously given consent to your application for a given set of scopes.
+
+//<fenyo@gw> ./xoauth.py --generate_xoauth_string --user=alexandre.fenyo@gmail.com --oauth_token=1/1SxkAUyIZBBT3ojm6rSvqFUttTMx19bJ8rwACsTl7Aw --oauth_token_secret=PASSWORD 
+//signature base string:
+//GET&https%3A%2F%2Fmail.google.com%2Fmail%2Fb%2Falexandre.fenyo%40gmail.com%2Fimap%2F&oauth_consumer_key%3Danonymous%26oauth_nonce%3D9636735160785632788%26oauth_signature_method%3DHMAC-SHA1%26oauth_timestamp%3D1344960067%26oauth_token%3D1%252F1SxkAUyIZBBT3ojm6rSvqFUttTMx19bJ8rwACsTl7Aw%26oauth_version%3D1.0
+//
+//xoauth string (before base64-encoding):
+//GET https://mail.google.com/mail/b/alexandre.fenyo@gmail.com/imap/ oauth_consumer_key="anonymous",oauth_nonce="9636735160785632788",oauth_signature="9QK0QxgtdyZoU%2FLS7NQKapg99Gg%3D",oauth_signature_method="HMAC-SHA1",oauth_timestamp="1344960067",oauth_token="1%2F1SxkAUyIZBBT3ojm6rSvqFUttTMx19bJ8rwACsTl7Aw",oauth_version="1.0"
+//
+//XOAUTH string (base64-encoded): R0VUIGh0dHBzOi8vbWFpbC5nb29nbGUuY29tL21haWwvYi9hbGV4YW5kcmUuZmVueW9AZ21haWwuY29tL2ltYXAvIG9hdXRoX2NvbnN1bWVyX2tleT0iYW5vbnltb3VzIixvYXV0aF9ub25jZT0iOTYzNjczNTE2MDc4NTYzMjc4OCIsb2F1dGhfc2lnbmF0dXJlPSI5UUswUXhndGR5Wm9VJTJGTFM3TlFLYXBnOTlHZyUzRCIsb2F1dGhfc2lnbmF0dXJlX21ldGhvZD0iSE1BQy1TSEExIixvYXV0aF90aW1lc3RhbXA9IjEzNDQ5NjAwNjciLG9hdXRoX3Rva2VuPSIxJTJGMVN4a0FVeUlaQkJUM29qbTZyU3ZxRlV0dFRNeDE5Yko4cndBQ3NUbDdBdyIsb2F1dGhfdmVyc2lvbj0iMS4wIg==
+
+//openssl s_client -host imap.gmail.com -port 993
+//C01 CAPABILITY 
+//A01 AUTHENTICATE XOAUTH R0VUIGh0dHBzOi8vbWFpbC5nb29nbGUuY29tL21haWwvYi9hbGV4YW5kcmUuZmVueW9AZ21haWwuY29tL2ltYXAvIG9hdXRoX2NvbnN1bWVyX2tleT0iYW5vbnltb3VzIixvYXV0aF9ub25jZT0iOTYzNjczNTE2MDc4NTYzMjc4OCIsb2F1dGhfc2lnbmF0dXJlPSI5UUswUXhndGR5Wm9VJTJGTFM3TlFLYXBnOTlHZyUzRCIsb2F1dGhfc2lnbmF0dXJlX21ldGhvZD0iSE1BQy1TSEExIixvYXV0aF90aW1lc3RhbXA9IjEzNDQ5NjAwNjciLG9hdXRoX3Rva2VuPSIxJTJGMVN4a0FVeUlaQkJUM29qbTZyU3ZxRlV0dFRNeDE5Yko4cndBQ3NUbDdBdyIsb2F1dGhfdmVyc2lvbj0iMS4wIg==
+
+------------------------------------------------------------
+avec OAUTH 1.0
+
+spec http://tools.ietf.org/pdf/rfc5849.pdf
+exs d'après google : https://developers.google.com/accounts/docs/OAuth_ref
+
+enregistrer son domaine : https://accounts.google.com/ManageDomains
+domaine http://www.vpnoverdns.com
+il faut ensuite valider qu'on est le proprio
+ensuite updater :
+https://accounts.google.com/UpdateDomain
+target url path : https://www.vpnoverdns.com/authsub
+Must be the prefix of the next parameter used in AuthSub. 
+OAuth Consumer Key:  www.vpnoverdns.com  
+OAuth Consumer Secret:  eFqVBKU0Fe204Pkw78XBzlIW  
+j'ai mis le certif de www.vpnoverdns.com
+
+temporary credential request https://www.google.com/accounts/OAuthGetRequestToken
+https://www.google.com/accounts/OAuthAuthorizeToken
+
+construire la première requête : https://developers.google.com/accounts/docs/OAuth_ref#RequestToken
+https://www.google.com/accounts/OAuthGetRequestToken
+
+oauth_consumer_key="www.vpnoverdns.com",
+oauth_signature_method="RSA-SHA1",
+oauth_signature="wOJIO9A2W5mFwDgiDvZbTSMK%2FPY%3D",
+oauth_timestamp="137131200",
+oauth_nonce="4572616e48616d6d65724c61686176",
+oauth_version="1.0"
+oauth_callback="https://localhost/mail4hotspot/oauthcb"
+scope="https://mail.google.com/"
+
+pour utiliser CPAN :
+yum install perl-CPAN
+perl -MCPAN -e shell
+install CPAN
+reload cpan
+install Digest::SHA
+
+On peut copier / coller a partir d'ici
+--------------------
+
+# définir le nonce :
+nonce=4572616e48616d6d65724c61686172
+
+# définir now :
+date +%s | read now
+
+# la basestring se construit sans la signature, en mettant les paramètres dans l'ordre alphabétique (cf le RFC) :
+echo "GET&" | read bspart0
+echo "https://www.google.com/accounts/OAuthGetRequestToken" | read bspart1
+perl -MURI::Escape -e "print uri_escape('$bspart1');" | read bspart1encoded
+echo "oauth_callback=https%3A%2F%2Flocalhost%2Fmail4hotspot%2Foauthcb&oauth_consumer_key=www.vpnoverdns.com&oauth_nonce=$nonce&oauth_signature_method=HMAC-SHA1&oauth_timestamp=$now&oauth_version=1.0&scope=https%3A%2F%2Fmail.google.com%2F" | read bspart2
+perl -MURI::Escape -e "print uri_escape('$bspart2');" | read bspart2encoded
+echo -n "$bspart0$bspart1encoded&$bspart2encoded" | read basestring
+
+# signer la base string
+# ne pas utiliser hmac_sha1_base64, qui oublie le = final, mais plutôt openssl base64
+perl -e "use Digest::SHA qw(hmac_sha1); print hmac_sha1('$basestring','eFqVBKU0Fe204Pkw78XBzlIW&');" | openssl base64 | read digest
+perl -MURI::Escape -e "print uri_escape('$digest');" | read digestencoded
+
+# construire l'URL à interroger :
+echo "https://www.google.com/accounts/OAuthGetRequestToken?oauth_consumer_key=www.vpnoverdns.com&oauth_nonce=$nonce&oauth_signature_method=HMAC-SHA1&oauth_timestamp=$now&oauth_version=1.0&oauth_callback=https%3A%2F%2Flocalhost%2Fmail4hotspot%2Foauthcb&scope=https%3A%2F%2Fmail.google.com%2F&oauth_signature=$digestencoded" | read URL
+
+echo "$URL"
+curl "$URL" > oauth_token_and_secret
+# ex de request token recupere : oauth_token=4%2FfYOcy3sT03fNfnkJV19yRkUF_Q6d&oauth_token_secret=PASSWORD&oauth_callback_confirmed=true
+cat oauth_token_and_secret | sed 's/&.*//' | sed s/oauth_token=// | read oauthtoken
+cat oauth_token_and_secret | sed 's/.*secret=//'| sed 's/&.*//' | read oauthtokensecret
+
+# Il faut maintenant autoriser le request token qu'on vient de recuperer
+
+# aller sur :
+echo "https://www.google.com/accounts/OAuthAuthorizeToken?oauth_token=$oauthtoken" | read URL
+echo "$URL"
+# En fait ca renvoie l'utilisateur vers la page d'acceptation
+
+--------------------
+Fin du copier / coller
+
+ENTRER l'URL dans firefox
+Noter le verifier récupéré, dans la variable shell verifier :
+verifier=ItSZ_fwmJkL6H_G_4O4RlcYA
+
+j'accepte mais idem si j'avais pas accepté et c'est conforme à la spec de google(https://developers.google.com/accounts/docs/OAuth_ref#RequestToken), ca me renvoie alors vers :
+https://localhost/mail4hotspot/oauthcb?oauth_verifier=W8uO6XwTtbmQ7cX57r1-cZju&oauth_token=4%2FfYOcy3sT03fNfnkJV19yRkUF_Q6d
+
+On a donc un code de vérification qu'il faut maintenant échanger contre un access token
+ex de code de vérification : oauth_verifier=W8uO6XwTtbmQ7cX57r1-cZju
+# verifier=W8uO6XwTtbmQ7cX57r1-cZju
+
+On peut copier / coller a partir d'ici
+--------------------
+
+# définir le nouveau nonce :
+nonce=4572616e48616d6d65724c61686173
+
+# définir now :
+date +%s | read now
+
+# la basestring se construit sans la signature :
+echo "GET&" | read bspart0
+echo "https://www.google.com/accounts/OAuthGetAccessToken" | read bspart1
+perl -MURI::Escape -e "print uri_escape('$bspart1');" | read bspart1encoded
+echo "oauth_consumer_key=www.vpnoverdns.com&oauth_nonce=$nonce&oauth_signature_method=HMAC-SHA1&oauth_timestamp=$now&oauth_token=$oauthtoken&oauth_verifier=$verifier&oauth_version=1.0" | read bspart2
+perl -MURI::Escape -e "print uri_escape('$bspart2');" | read bspart2encoded
+echo -n "$bspart0$bspart1encoded&$bspart2encoded" | read basestring
+
+# signer la base string
+# ne pas utiliser hmac_sha1_base64, qui oublie le = final, mais plutôt openssl base64
+perl -e "use Digest::SHA qw(hmac_sha1); print hmac_sha1('$basestring','PASSWORD&$oauthtokensecret');" | openssl base64 | read digest
+perl -MURI::Escape -e "print uri_escape('$digest');" | read digestencoded
+
+# construire l'URL à interroger :
+echo "https://www.google.com/accounts/OAuthGetAccessToken?oauth_consumer_key=www.vpnoverdns.com&oauth_nonce=$nonce&oauth_signature_method=HMAC-SHA1&oauth_timestamp=$now&oauth_token=$oauthtoken&oauth_verifier=$verifier&oauth_version=1.0&oauth_signature=$digestencoded" | read URL
+
+echo "$URL"
+curl "$URL" > oauth_access_token_and_secret
+cat oauth_access_token_and_secret | sed 's/&.*//' | sed s/oauth_token=// | read oauthaccesstoken
+cat oauth_access_token_and_secret | sed 's/.*secret=//'| sed 's/&.*//' | read oauthaccesstokensecret
+
+--------------------
+Fin du copier / coller
+
+On peut le charger qu'une fois, car ça invalide le request_token, certainement pour pas qu'on puisse réutiliser le code d'autorisation qui est lié au request_token
+
+# ex d'access token avec secret récupéré :
+# oauth_token=1%2FBB4-FmlXpjl3rjsYGo2LwWkThbmErKI2OUT_OtTL1EQ&oauth_token_secret=
+
+On passe maintenant à SASL :
+
+# pour comprendre l'exemple fourni par la spec SASL, on décode l'URL encodée en base 64, comme suit :
+# on met dans x le contenu base64 en une seule ligne
+# <fenyo@gw> cat x
+# R0VUIGh0dHBzOi8vbWFpbC5nb29nbGUuY29tL21haWwvYi9zb21ldXNlckBleGFtcGxlLmNvbS9pbWFwLz94b2F1dGhfcmVxdWVzdG9yX2lkPXNvbWV1c2VyJTQwZXhhbXBsZS5jb20gb2F1dGhfY29uc3VtZXJfa2V5PSJleGFtcGxlLmNvbSIsb2F1dGhfbm9uY2U9IjQ3MTAzMDczMjc5MjU0Mzk0NTEiLG9hdXRoX3NpZ25hdHVyZT0iNzUlMkJCNjNOYlcyR2RETWFPQ0VkJTJGeSUyRmIlMkIwUWslM0QiLG9hdXRoX3NpZ25hdHVyZV9tZXRob2Q9IkhNQUMtU0hBMSIsb2F1dGhfdGltZXN0YW1wPSIxMjYwOTMzNjgzIixvYXV0aF92ZXJzaW9uPSIxLjAiCg==
+# <fenyo@gw> base64 -d < x
+# GET https://mail.google.com/mail/b/someuser@example.com/imap/?xoauth_requestor_id=someuser%40example.com oauth_consumer_key="example.com",oauth_nonce="4710307327925439451",oauth_signature="75%2BB63NbW2GdDMaOCEd%2Fy%2Fb%2B0Qk%3D",oauth_signature_method="HMAC-SHA1",oauth_timestamp="1260933683",oauth_version="1.0"
+
+On peut copier / coller a partir d'ici
+--------------------
+
+# définir le nouveau nonce :
+nonce=4572616e48616d6d65724c61686173
+
+# définir now :
+date +%s | read now
+
+# la basestring se construit sans la signature :
+echo "GET&" | read bspart0
+echo "https://mail.google.com/mail/b/alexandre.fenyo2@gmail.com/imap/" | read bspart1
+perl -MURI::Escape -e "print uri_escape('$bspart1');" | read bspart1encoded
+echo "oauth_consumer_key=www.vpnoverdns.com&oauth_nonce=$nonce&oauth_signature_method=HMAC-SHA1&oauth_timestamp=$now&oauth_token=$oauthaccesstoken&oauth_version=1.0" | read bspart2
+perl -MURI::Escape -e "print uri_escape('$bspart2');" | read bspart2encoded
+echo -n "$bspart0$bspart1encoded&$bspart2encoded" | read basestring
+
+# signer la base string
+# ne pas utiliser hmac_sha1_base64, qui oublie le = final, mais plutôt openssl base64
+perl -e "use Digest::SHA qw(hmac_sha1); print hmac_sha1('$basestring','PASSWORD&$oauthaccesstokensecret');" | openssl base64 | read digest
+perl -MURI::Escape -e "print uri_escape('$digest');" | read digestencoded
+
+# construire l'URL à encoder pour SASL :
+echo "GET https://mail.google.com/mail/b/alexandre.fenyo2@gmail.com/imap/ oauth_consumer_key=\"www.vpnoverdns.com\",oauth_nonce=\"$nonce\",oauth_signature_method=\"HMAC-SHA1\",oauth_timestamp=\"$now\",oauth_token=\"$oauthaccesstoken\",oauth_version=\"1.0\",oauth_signature=\"$digestencoded\"" | read URL
+
+echo "$URL" | base64 -w 0 | read URLBASE64
+echo "$URLBASE64"
+
+--------------------
+Fin du copier / coller
+
+openssl s_client -host imap.gmail.com -port 993
+C01 CAPABILITY
+A01 AUTHENTICATE XOAUTH R0VUIGh0dHBzOi8vbWFpbC5nb29nbGUuY29tL21haWwvYi9hbGV4YW5kcmUuZmVueW8yQGdtYWlsLmNvbS9pbWFwLyBvYXV0aF9jb25zdW1lcl9rZXk9Ind3dy52cG5vdmVyZG5zLmNvbSIsb2F1dGhfbm9uY2U9IjQ1NzI2MTZlNDg2MTZkNmQ2NTcyNGM2MTY4NjE3MyIsb2F1dGhfc2lnbmF0dXJlX21ldGhvZD0iSE1BQy1TSEExIixvYXV0aF90aW1lc3RhbXA9IjEzNDUwNjg0MTYiLG9hdXRoX3Rva2VuPSIxJTJGQkI0LUZtbFhwamwzcmpzWUdvMkx3V2tUaGJtRXJLSTJPVVRfT3RUTDFFUSIsb2F1dGhfdmVyc2lvbj0iMS4wIixvYXV0aF9zaWduYXR1cmU9InJMTE43WGZMWFo1R1llbFJLR0FFaXJUVHJLWSUzRCIK
+
+A01 OK alexandre.fenyo2@gmail.com Alexandre Fenyo2 authenticated (Success)
+
+CA MARCHE ! On peut utiliser cette URLBASE64 plusieurs fois mais elle expire rapidement
+
+------------------------------------------------------------
+
+coproc openssl s_client -host imap.gmail.com -port 993
+for i in {1..53}
+do
+  read LINE <&p
+  echo "$LINE"
+done
+
+echo C01 CAPABILITY >&p
+read LINE <&p
+echo "$LINE"
+read LINE <&p
+echo "$LINE"
+
+echo A01 AUTHENTICATE XOAUTH "$URLBASE64" >&p
+read LINE <&p
+echo "$LINE"
+read LINE <&p
+echo "$LINE"
+
+pkill openssl
+
+------------------------------------------------------------
+

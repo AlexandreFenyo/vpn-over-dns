@@ -1,0 +1,222 @@
+<!-- (c) Alexandre Fenyo 2012, 2013, 2014, 2015, 2016 - alex@fenyo.net - http://fenyo.net - GPLv3 licensed -->
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		xmlns:s="library://ns.adobe.com/flex/spark"
+		destructionPolicy="never"
+		creationComplete="portRedirectionView_creationCompleteHandler(event)"
+		viewDeactivate="portRedirectionView_deactivateHandler(event)"
+		viewActivate="portRedirectionView_viewActivateHandler(event)">
+	<!-- xmlns:test="assets.*" -->
+	
+	<!-- destructionPolicy="never" : ça permet de conserver l'endroit où on a scrollé, quand on revient de la lecture d'un mail -->
+	
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.ListCollectionView;
+			import mx.events.*;
+			import mx.managers.PopUpManager;
+			import spark.components.ViewNavigator;
+			
+			import net.fenyo.mail4hotspot.gui.*;
+			import net.fenyo.mail4hotspot.service.*;
+			
+			import spark.components.ViewNavigator;
+			import spark.events.IndexChangeEvent;
+			import spark.events.ViewNavigatorEvent;
+			
+			private function portRedirectionView_creationCompleteHandler(event:FlexEvent) : void {
+				text_ports.source = Main.TextPorts640;
+				text_ports.scaleX = text_ports.scaleY = text_ports.scaleZ = parentApplication.applicationDPI / 640;
+			}
+			
+			protected function button1_clickHandler(event : MouseEvent) : void {
+				navigator.pushView(views.NewRedirectionView);
+			}
+
+			protected function button2_clickHandler(event : MouseEvent) : void {
+				button_ports2.enabled = false;
+
+				const listCollectionView : ListCollectionView = parentApplication.portsDataProvider;
+				for (var i : int = 0; i < listCollectionView.length; i++) {
+					const portItem : PortItem = listCollectionView.getItemAt(i) as PortItem;
+					if (portItem.selected) {
+						listCollectionView.removeItemAt(i);
+						parentApplication.persistenceManager.setProperty("portsDataProvider", listCollectionView.list);
+						parentApplication.persistenceManager.save();
+						return;
+					}
+				}
+			}
+
+			protected function myList_clickHandler(event:MouseEvent):void {
+				if (myList.selectedItem.internal_use == false)
+					myList.selectedItem.selected = !myList.selectedItem.selected;
+
+				const listCollectionView : ListCollectionView = parentApplication.portsDataProvider;
+				for (var i : int = 0; i < listCollectionView.length; i++) {
+					const portItem : PortItem = listCollectionView.getItemAt(i) as PortItem;
+					if (portItem.selected && portItem != myList.selectedItem) portItem.selected = false;
+				}
+
+				button_ports2.enabled = myList.selectedItem.selected;
+			}
+			
+			protected function myList_changeHandler(event:IndexChangeEvent) : void { }
+			
+			protected function portRedirectionView_viewActivateHandler(event:ViewNavigatorEvent):void {
+				stage.addEventListener(KeyboardEvent.KEY_DOWN, onKeyDown);
+			}
+			
+			protected function portRedirectionView_deactivateHandler(event:Event):void {
+				stage.removeEventListener(KeyboardEvent.KEY_DOWN, onKeyDown);
+			}
+			
+			protected function onKeyDown(event:KeyboardEvent):void {
+				if (event.keyCode == Keyboard.BACK) {
+					event.preventDefault();
+					navigator.popToFirstView();
+				} 
+				else if (event.keyCode == Keyboard.MENU) {} 
+				else if (event.keyCode == Keyboard.SEARCH) {}
+			}
+
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Placer ici les éléments non visuels (services et objets de valeur, par exemple). -->
+	</fx:Declarations>
+	
+	<s:layout>
+		<s:VerticalLayout paddingTop="0" paddingBottom="0" paddingLeft="0" paddingRight="0" gap="2" 
+						  horizontalAlign="center" verticalAlign="top"/>
+	</s:layout>
+	
+	<s:navigationContent>
+		<s:Button id="back" click="navigator.popView()" alpha=".8" styleName="back"/>
+	</s:navigationContent>
+	
+	<s:titleContent>
+		<s:HGroup width="100%" height="100%" horizontalAlign="center" verticalAlign="middle" gap="0">
+			<s:BitmapImage id="text_ports" alpha="{ Main.new_skin ? 1 : .4 }" fillMode="clip"/>
+		</s:HGroup>
+	</s:titleContent>
+	
+	<!--	<test:tst id="graphic1" x="70" y="24" width="309.28" height="436.89"/> -->
+	<!-- http://help.adobe.com/fr_FR/FlashPlatform/reference/actionscript/3/spark/components/List.html?filter_flex=4.1&filter_flashplayer=10.2&filter_air=2.6 -->
+	
+	<s:SkinnableContainer width="100%" height="100%" backgroundColor="{ Main.skin_bgcolor }">
+		<!-- skinClass="net.fenyo.mail4hotspot.gui.MobileSkinnableContainerSkin" -->
+		
+		<s:VGroup paddingLeft="10" paddingRight="10" paddingTop="10" paddingBottom="10" width="100%" height="100%">
+
+			<s:Label textAlign="center" fontStyle="normal" textAlpha=".5" color="#FFFFFF" backgroundAlpha=".5" backgroundColor="#2a2b2f" width="100%" fontSize="{ parentApplication.headerFontSize }"
+					 text="{ resourceManager.getString('localizedContent', 'PortRedirectionView_header') }">
+				<s:filters>
+					<s:DropShadowFilter alpha=".5" distance="3" angle="45"/>
+				</s:filters>
+			</s:Label>
+
+			<s:HGroup width="100%" horizontalAlign="center">
+				<s:Button id="button_ports1" width="40%" label="{ resourceManager.getString('localizedContent', 'PortRedirectionView_add') }"
+						  click="button1_clickHandler(event)">
+					<s:filters>
+						<s:DropShadowFilter alpha=".5" distance="3" angle="45"/>
+					</s:filters>
+				</s:Button>
+				<s:Rect width="5%"/>
+				<s:Button id="button_ports2" enabled="false" width="40%" label="{ resourceManager.getString('localizedContent', 'PortRedirectionView_remove') }"
+						  click="button2_clickHandler(event)">
+					<s:filters>
+						<s:DropShadowFilter alpha=".5" distance="3" angle="45"/>
+					</s:filters>
+				</s:Button>
+			</s:HGroup>
+
+			<s:Scroller width="100%" height="100%" horizontalScrollPolicy="off">
+				
+				<s:VGroup paddingLeft="0" paddingRight="0" paddingTop="0" paddingBottom="0" width="100%" height="100%">
+					
+					<s:List id="myList" width="100%" height="100%" change="myList_changeHandler(event)" click="myList_clickHandler(event)"
+							labelField="firstName" dataProvider="{ parentApplication.portsDataProvider }"
+							alpha="1" contentBackgroundColor="{ Main.skin_bgcolor }" contentBackgroundAlpha="1">
+						<!-- itemRenderer is inline in this sample -->
+						<s:itemRenderer>
+							<fx:Component>
+								<s:ItemRenderer width="100%" alpha="1" contentBackgroundColor="#D0D0D0" contentBackgroundAlpha="1">
+									<fx:Script>
+										<![CDATA[
+											import mx.core.FlexGlobals;
+											
+											import net.fenyo.mail4hotspot.service.Application;
+											
+											import spark.components.NavigatorContent;
+										]]>
+									</fx:Script>
+									<s:states>
+										<s:State name="normal" />
+										<s:State name="hovered" />
+										<s:State name="selected" />
+									</s:states>
+									<s:Rect left="0" right="0" top="0" bottom="0">
+										<s:fill>
+											<s:SolidColor color="{ Main.skin_bgcolor }" alpha="1" alpha.hovered="1" alpha.selected="1" />
+										</s:fill>
+									</s:Rect>
+									<!-- le left et le right font que ça s'adapte à la largeur de la fenêtre -->
+									<s:HGroup width="100%" gap="0" verticalAlign="middle">
+										<s:HGroup paddingTop="1" paddingBottom="0" paddingLeft="0" paddingRight="0" gap="0" width="100%">
+
+											<s:VGroup>
+												<s:Label width="100%" textAlign="right" fontSize="{ FlexGlobals.topLevelApplication.labelFontSize }" fontWeight="bold"
+														 paddingLeft="0" paddingRight="0" backgroundAlpha="1" color="#505050"
+														 text="{ resourceManager.getString('localizedContent', 'PortRedirectionView_description') }" left="0" right="0" paddingTop="1" paddingBottom="0"/>
+												<s:Label width="100%" textAlign="right" fontSize="{ FlexGlobals.topLevelApplication.smallLabelFontSize }"
+														 paddingLeft="0" paddingRight="0" backgroundAlpha="1" color="#505050"
+														 text="{ resourceManager.getString('localizedContent', 'PortRedirectionView_localport') }" left="0" right="0" paddingTop="1" paddingBottom="0"/>
+												<s:Label width="100%" textAlign="right" fontSize="{ FlexGlobals.topLevelApplication.smallLabelFontSize }"
+														 paddingLeft="0" paddingRight="0" backgroundAlpha="1" color="#505050"
+														 text="{ resourceManager.getString('localizedContent', 'PortRedirectionView_remotehost') }" left="0" right="0" paddingTop="1" paddingBottom="0"/>
+												<s:Label width="100%" textAlign="right" fontSize="{ FlexGlobals.topLevelApplication.smallLabelFontSize }"
+														 paddingLeft="0" paddingRight="0" backgroundAlpha="1" color="#505050"
+														 text="{ resourceManager.getString('localizedContent', 'PortRedirectionView_remoteport') }" left="0" right="0" paddingTop="1" paddingBottom="0"/>
+											</s:VGroup>
+
+											<s:Rect width="4"/>
+
+											<s:VGroup>
+												<s:Label width="100%" fontSize="{ FlexGlobals.topLevelApplication.labelFontSize }" fontWeight="bold"
+														 paddingLeft="0" paddingRight="0" backgroundAlpha="1" color="#505050"
+														 text="{ data.description }" left="0" right="0" paddingTop="1" paddingBottom="0"/>
+												<s:Label width="100%" fontSize="{ FlexGlobals.topLevelApplication.smallLabelFontSize }"
+														 paddingLeft="0" paddingRight="0" backgroundAlpha="1" color="#505050"
+														 text="{ data.local_port }" left="0" right="0" paddingTop="1" paddingBottom="0"/>
+												<s:Label width="100%" fontSize="{ FlexGlobals.topLevelApplication.smallLabelFontSize }"
+														 paddingLeft="0" paddingRight="0" backgroundAlpha="1" color="#505050"
+														 text="{ data.remote_host }" left="0" right="0" paddingTop="1" paddingBottom="0"/>
+												<s:Label width="100%" fontSize="{ FlexGlobals.topLevelApplication.smallLabelFontSize }"
+														 paddingLeft="0" paddingRight="0" backgroundAlpha="1" color="#505050"
+														 text="{ data.remote_port }" left="0" right="0" paddingTop="1" paddingBottom="0"/>
+											</s:VGroup>
+
+										</s:HGroup>
+										<s:CheckBox visible="{ !data.internal_use }" selected="{ data.selected }"/>
+										
+									</s:HGroup>
+									
+									<s:Line width="100%">
+										<s:stroke><s:SolidColorStroke color="black" weight="1" joints="miter"/></s:stroke>
+									</s:Line>
+									
+								</s:ItemRenderer>
+							</fx:Component>
+						</s:itemRenderer>
+						
+					</s:List>
+				</s:VGroup>
+				
+			</s:Scroller>
+		</s:VGroup>
+	</s:SkinnableContainer>
+	
+</s:View>

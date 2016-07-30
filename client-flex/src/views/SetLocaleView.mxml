@@ -1,0 +1,195 @@
+<!-- (c) Alexandre Fenyo 2012, 2013, 2014, 2015, 2016 - alex@fenyo.net - http://fenyo.net - GPLv3 licensed -->
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009"
+		xmlns:mx="library://ns.adobe.com/flex/mx"
+		xmlns:s="library://ns.adobe.com/flex/spark"
+		creationComplete="setLocaleView_creationCompleteHandler(event)"
+		viewDeactivate="setLocaleView_deactivateHandler(event)"
+		viewActivate="setLocaleView_viewActivateHandler(event)">
+
+	<fx:Declarations>
+		<!-- Placer ici les éléments non visuels (services et objets de valeur, par exemple). -->
+	</fx:Declarations>
+
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			import mx.resources.ResourceManager;
+			
+			import spark.events.IndexChangeEvent;
+			import spark.events.ViewNavigatorEvent;
+			import spark.skins.mobile.RadioButtonSkin;
+			
+			import net.fenyo.mail4hotspot.dns.DnsQuerierFactory;
+			
+			private function setLocaleView_creationCompleteHandler(event:FlexEvent) : void {
+				initLocale();
+				initSkin();
+			
+				if (resourceManager.localeChain[0].toString().substr(0, 2) == "fr") text_langue.source = Main.TextLangue640;
+				else text_langue.source = Main.TextCountry640;
+				text_langue.scaleX = text_langue.scaleY = text_langue.scaleZ = parentApplication.applicationDPI / 640;
+			}
+
+			private function initSkin() : void {
+				if (Main.new_skin) {
+					radio_blue.selected = true;
+					radio_grey.selected = false;
+				} else {
+					radio_blue.selected = false;
+					radio_grey.selected = true;
+				}
+			}
+
+			private function initLocale() : void {
+				if (resourceManager.localeChain[0].toString().substr(0, 2) == "fr") {
+					radio_english.selected = false;
+					radio_french.selected = true;
+				} else {
+					radio_english.selected = true;
+					radio_french.selected = false;
+				}
+			}
+
+			private function updateLocale(event : MouseEvent) : void {
+				// on ne sait pas retranscrire dans la nvlle langue le texte de statut, donc on l'efface...
+				// parentApplication.view_status.activeView.label_state.text = "";
+//				Application._displayDns();
+//				Application._displayBytes();
+//				Application._displayMails();
+
+				if (radio_english.selected == true) {
+					resourceManager.localeChain = [ 'en_US', 'fr_FR' ];
+					parentApplication.persistenceManager.setProperty("localeSelectedByUser", 'en_US');
+					parentApplication.persistenceManager.save();
+				} else {
+					resourceManager.localeChain = [ 'fr_FR', 'en_US' ];
+					parentApplication.persistenceManager.setProperty("localeSelectedByUser", 'fr_FR');
+					parentApplication.persistenceManager.save();
+				}
+
+				DnsQuerierFactory.initLocale();
+
+				// activeView est null si on n'est pas encore allé sur cette vue
+				if (!Main.tablet) {
+
+					// Alex
+					if (parentApplication.view_status.activeView != null) {
+						if (resourceManager.localeChain[0].toString().substr(0, 2) == "fr")
+							parentApplication.view_status.activeView.text_status.source = Main.TextStatut640;
+						else parentApplication.view_status.activeView.text_status.source = Main.TextStatus640;
+						parentApplication.view_status.activeView.text_status.scaleX = parentApplication.view_status.activeView.text_status.scaleY = parentApplication.view_status.activeView.text_status.scaleZ = parentApplication.applicationDPI / 640;
+
+						if (resourceManager.localeChain[0].toString().substr(0, 2) == "fr") text_langue.source = Main.TextLangue640;
+						else text_langue.source = Main.TextCountry640;
+						text_langue.scaleX = text_langue.scaleY = text_langue.scaleZ = parentApplication.applicationDPI / 640;
+					}
+
+				} else {
+
+					// Alex
+					if (parentApplication.view_status.activeView != null) {
+						if (resourceManager.localeChain[0].toString().substr(0, 2) == "fr")
+							parentApplication.view_status.activeView.text_status.source = Main.TextStatut640;
+						else parentApplication.view_status.activeView.text_status.source = Main.TextStatus640;
+						parentApplication.view_status.activeView.text_status.scaleX = parentApplication.view_status.activeView.text_status.scaleY = parentApplication.view_status.activeView.text_status.scaleZ = parentApplication.applicationDPI / 640;
+					}
+
+					if (resourceManager.localeChain[0].toString().substr(0, 2) == "fr") text_langue.source = Main.TextLangue640;
+					else text_langue.source = Main.TextCountry640;
+					text_langue.scaleX = text_langue.scaleY = text_langue.scaleZ = parentApplication.applicationDPI / 640;
+				}
+			}
+
+			private function updateSkin(event : MouseEvent) : void {
+				if (radio_grey.selected == true) {
+					parentApplication.persistenceManager.setProperty("skinSelectedByUser", 'grey');
+					parentApplication.persistenceManager.save();
+				} else {
+					parentApplication.persistenceManager.setProperty("skinSelectedByUser", 'blue');
+					parentApplication.persistenceManager.save();
+				}
+			}
+			
+			protected function setLocaleView_viewActivateHandler(event:ViewNavigatorEvent):void
+			{
+				stage.addEventListener(KeyboardEvent.KEY_DOWN, onKeyDown);
+			}
+			
+			protected function setLocaleView_deactivateHandler(event:Event):void
+			{
+				stage.removeEventListener(KeyboardEvent.KEY_DOWN, onKeyDown);
+			}
+
+			protected function onKeyDown(event:KeyboardEvent):void
+			{
+				if (event.keyCode == Keyboard.BACK) {
+					event.preventDefault();
+					navigator.popToFirstView();
+				}
+				else if (event.keyCode == Keyboard.MENU) {} 
+				else if (event.keyCode == Keyboard.SEARCH) {}
+			}
+
+		]]>
+
+	</fx:Script>
+
+	<s:layout>
+		<s:VerticalLayout paddingTop="0" paddingBottom="0" paddingLeft="0" paddingRight="0" gap="2" 
+						  horizontalAlign="center" verticalAlign="top"/>
+	</s:layout>
+
+	<s:navigationContent>
+		<s:Button id="back" click="navigator.popToFirstView()" alpha=".8" styleName="back"/>
+	</s:navigationContent>
+
+	<s:titleContent>
+		<s:HGroup width="100%" height="100%" horizontalAlign="center" verticalAlign="middle" gap="0">
+			<s:BitmapImage id="text_langue" alpha="{ Main.new_skin ? 1 : .4 }" fillMode="clip"/>
+		</s:HGroup>
+	</s:titleContent>
+
+	<s:SkinnableContainer width="100%" height="100%" skinClass="net.fenyo.mail4hotspot.gui.MobileSkinnableContainerSkin">
+		<s:Scroller left="5" right="5" top="5" bottom="5" width="100%" height="100%">
+			
+			<s:VGroup paddingLeft="5" paddingRight="5" paddingTop="5" paddingBottom="5" width="100%" height="100%">
+
+				<s:Label fontStyle="italic" textAlpha=".5" color="#FFFFFF" backgroundAlpha=".5" backgroundColor="#080000" width="100%" fontSize="{ parentApplication.headerFontSize }"
+						 text="{ resourceManager.getString('localizedContent', 'SetLocaleView_header') }">
+					<s:filters>
+						<s:DropShadowFilter alpha=".5" distance="3" angle="45"/>
+					</s:filters>
+				</s:Label>
+
+				<s:Label width="100%" fontSize="{ parentApplication.labelFontSize }"
+						 text="{ resourceManager.getString('localizedContent', 'SetLocaleView') }"/>
+				<s:Label width="100%" fontSize="{ parentApplication.smallLabelFontSize }"
+						 text="{ resourceManager.getString('localizedContent', 'SetLocaleView_small') }"/>
+
+				<s:RadioButton id="radio_english" label="{ resourceManager.getString('localizedContent', 'english') }" groupName='languageGroup' click="updateLocale(event)" chromeColor="0xC0C0C0" skinClass="spark.skins.mobile.RadioButtonSkin"/>
+				<s:RadioButton id="radio_french" label="{ resourceManager.getString('localizedContent', 'french') }" groupName='languageGroup' click="updateLocale(event)" chromeColor="0xC0C0C0" skinClass="spark.skins.mobile.RadioButtonSkin"/>
+
+<!-- set skin -->
+				
+				<s:Label fontStyle="italic" textAlpha=".5" color="#FFFFFF" backgroundAlpha=".5" backgroundColor="#080000" width="100%" fontSize="{ parentApplication.headerFontSize }"
+						 text="{ resourceManager.getString('localizedContent', 'SetLocaleView_skin_header') }">
+					<s:filters>
+						<s:DropShadowFilter alpha=".5" distance="3" angle="45"/>
+					</s:filters>
+				</s:Label>
+				
+				<s:Label width="100%" fontSize="{ parentApplication.labelFontSize }"
+						 text="{ resourceManager.getString('localizedContent', 'SetLocaleView_skin') }"/>
+				<s:Label width="100%" fontSize="{ parentApplication.smallLabelFontSize }" color="#CE0000" fontWeight="bold"
+						 text="{ resourceManager.getString('localizedContent', 'SetLocaleView_skin_small') }"/>
+				
+				<s:RadioButton id="radio_grey" label="{ resourceManager.getString('localizedContent', 'SetLocaleView_skin_grey') }" groupName='skinGroup' click="updateSkin(event)" chromeColor="0xC0C0C0" skinClass="spark.skins.mobile.RadioButtonSkin"/>
+				<s:RadioButton id="radio_blue" label="{ resourceManager.getString('localizedContent', 'SetLocaleView_skin_blue') }" groupName='skinGroup' click="updateSkin(event)" chromeColor="0xC0C0C0" skinClass="spark.skins.mobile.RadioButtonSkin"/>
+		
+			</s:VGroup>
+		</s:Scroller>
+	</s:SkinnableContainer>
+
+</s:View>

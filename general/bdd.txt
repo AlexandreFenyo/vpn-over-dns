@@ -1,0 +1,91 @@
+sous redhat :
+installer via "yum install" :
+tous les RPMs signalés dans http://wiki.postgresql.org/wiki/RPM_Installation
+
+sous OpenSUSE :
+zypper install postgresql postgresql-contrib postgresql-devel  postgresql-docs postgresql-jdbc postgresql-libs-32bit postgresql-pl postgresql-server postgresql-plperl 
+
+sous SLES :
+zypper install postgresql postgresql-contrib postgresql-docs postgresql-jdbc postgresql-libs postgresql-server
+
+root@gw# chkconfig postgresql on         
+
+sous redhat uniquement, la première fois, avant de démarrer par /etc/init.d/... :
+root@gw# service postgresql initdb
+
+puis :
+root@gw# /etc/init.d/postgresql start
+
+Les autorisations sont par défaut pour postgres et non root :
+root@gw# su - postgres
+p-bash-3.2$ psql -l
+     Liste des bases de donnÃ©es
+    Nom    | PropriÃ©taire | Encodage 
+-----------+--------------+----------
+ postgres  | postgres     | UTF8
+ template0 | postgres     | UTF8
+ template1 | postgres     | UTF8
+
+
+-bash-3.2$ createdb test1
+
+-bash-3.2$ createdb mail4hotspot
+
+On trouve le .jar à mettre dans le répt des jar de squirrelsql :
+root@gw# rpm -q postgresql-jdbc -l | fgrep .jar
+sous redhat :
+/usr/lib/gcj/postgresql-jdbc/postgresql-jdbc-8.3.603.jar.db
+/usr/lib/gcj/postgresql-jdbc/postgresql-jdbc-8.3.603.jar.so
+/usr/share/java/postgresql-jdbc-8.3.603.jar
+/usr/share/java/postgresql-jdbc.jar
+/usr/share/java/postgresql-jdbc2.jar
+/usr/share/java/postgresql-jdbc2ee.jar
+/usr/share/java/postgresql-jdbc3.jar
+sous Suse:
+/usr/share/pgsql/postgresql-8.2-506.jdbc3.jar
+sous SLES:
+postgres@vpn:~> rpm -q postgresql-jdbc -l | fgrep .jar
+/usr/share/java/postgresql-jdbc.jar
+/usr/share/pgsql/postgresql-8.2-506.jdbc2.jar
+/usr/share/pgsql/postgresql-8.2-506.jdbc2ee.jar
+/usr/share/pgsql/postgresql-8.2-506.jdbc3.jar
+
+Le bon jar est /usr/share/java/postgresql-jdbc-8.3.603.jar
+On le met avec les autres Jars du rept de jar sous le rept d'install de squirrelsql
+on relance squirrelsql et on ajoute l'alias correspondant à mail4hotspot
+
+On modifie /var/lib/pgsql/data/postgresql.conf pour qu'il écoute sur le réseau :
+listen_addresses = 'localhost,192.168.0.5' # what IP address(es) to listen on;
+
+dans /var/lib/pgsql/data/pg_hba.conf, rajouter à la fin :
+host    all         all         192.168.0.0/24          password	sameuser
+
+Et on modifie comme suit :
+#host    all         all         127.0.0.1/32          ident sameuser
+host    all         all         127.0.0.1/32          password sameuser
+
+root@gw# /etc/init.d/postgresql restart
+
+on crée : mail4hotspotadmin / PASSWORD
+
+su - postgres
+-bash-3.2$ createuser -s -d -r -l -P mail4hotspotadmin
+Saisissez le mot de passe pour le nouveau rÃ´le : 
+Saisissez-le Ã  nouveau : 
+dropuser pour l'effacer
+
+postgres=# \du
+                                         Liste des rÃ´les
+    Nom du rÃ´le    | Superutilisateur | CrÃ©er un rÃ´le | CrÃ©er une base | Connexions  | Membre de 
+-------------------+------------------+---------------+----------------+-------------+-----------
+ mail4hotspotadmin | oui              | oui           | oui            | sans limite | {}
+ postgres          | oui              | oui           | oui            | sans limite | {}
+(2 lignes)
+
+Pour squirrel, l'URL de connexion est : jdbc:postgresql://192.168.0.5:5432/mail4hotspot
+
+Pour supprimer d'un compte retélécharge tous ses mails :
+update account set inboxmailmark_id = null where id in (select acct.id from account acct, public.user usr, user_account usracct where usracct.user_id = usr.id and usracct.accounts_id = acct.id and usr.username = 'fenyoa')
+delete from inboxmail where id in (select inbox.id from inboxmail inbox, account acct, public.user usr, user_account usracct where usracct.user_id = usr.id and usracct.accounts_id = acct.id and inbox.account_id = acct.id and usr.username = 'fenyoa')
+
+

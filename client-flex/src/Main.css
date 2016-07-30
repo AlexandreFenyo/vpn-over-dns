@@ -1,0 +1,164 @@
+/* CSS file */
+@namespace s "library://ns.adobe.com/flex/spark";
+
+s|Button {
+	skinClass: ClassReference("net.fenyo.mail4hotspot.gui.MobileButtonSkin");
+	/* skinClass: ClassReference("net.fenyo.mail4hotspot.gui.MobileButtonGlossySkin"); */
+	/* icon: Embed(source="assets/dns160.png"); */
+	/* icon: Embed(source="assets/basket_put.png"); */
+}
+
+#button_start {
+	skinClass: ClassReference("net.fenyo.mail4hotspot.gui.MobileButtonGlossySkin");
+}
+
+#button_stop {
+	skinClass: ClassReference("net.fenyo.mail4hotspot.gui.MobileButtonGlossySkin");
+}
+
+#button_clean_mails {
+	skinClass: ClassReference("net.fenyo.mail4hotspot.gui.MobileButtonGlossySkin");
+}
+
+#button_new_mail {
+	skinClass: ClassReference("net.fenyo.mail4hotspot.gui.MobileButtonGlossySkin");
+}
+
+#button_delete_mail {
+	skinClass: ClassReference("net.fenyo.mail4hotspot.gui.MobileButtonGlossySkin");
+}
+
+#button_reply_mail {
+	skinClass: ClassReference("net.fenyo.mail4hotspot.gui.MobileButtonGlossySkin");
+}
+
+#button_ports1 {
+	skinClass: ClassReference("net.fenyo.mail4hotspot.gui.MobileButtonGlossySkin");
+}
+
+#button_ports2 {
+	skinClass: ClassReference("net.fenyo.mail4hotspot.gui.MobileButtonGlossySkin");
+}
+
+.title {
+	/* 40*160/240 = 27 */
+	fontSize: 27;
+}
+
+.back {
+	icon: Embed(source="assets/home2_26x26.png");
+}
+
+@media (application-dpi: 120) {
+	s|Button {
+	}
+	
+	.title {
+		/* 40*120/240 = 20 */
+		fontSize: 20;
+	}
+	
+	.back {
+		icon: Embed(source="assets/home2_20x20.png");
+	}
+}
+
+@media (application-dpi: 160) {
+	s|Button {
+		/* icon: Embed(source="assets/smalldns160.png"); */
+	}
+
+	.title {
+		/* 40*160/240 = 27 */
+		fontSize: 27;
+	}
+
+	.back {
+		icon: Embed(source="assets/home2_26x26.png");
+	}
+}
+
+@media (application-dpi: 240) {
+	s|Button {
+		/* icon: Embed(source="assets/dns240.png"); */
+	}
+
+	.title {
+		fontSize: 40;
+	}
+
+	.back {
+		icon: Embed(source="assets/home2_40x40.png");
+	}
+}
+
+@media (application-dpi: 320) {
+	s|Button {
+		/* icon: Embed(source="assets/dns320.png"); */
+	}
+
+	.title {
+		/* 40*320/240 = 53 */
+		fontSize: 53;
+	}
+
+	.back {
+		icon: Embed(source="assets/home2_53x53.png");
+	}
+}
+
+@media (application-dpi: 480) {
+	s|Button {
+	}
+	
+	.title {
+		/* 40*480/240 = 80 */
+		fontSize: 80;
+	}
+	
+	.back {
+		icon: Embed(source="assets/home2_80x80.png");
+	}
+}
+
+@media (application-dpi: 640) {
+	s|Button {
+	}
+	
+	.title {
+		/* 40*640/240 = 107 */
+		fontSize: 107;
+	}
+	
+	.back {
+		icon: Embed(source="assets/home2_107x107.png");
+	}
+}
+
+s|ActionBar {
+	skinClass: ClassReference("net.fenyo.mail4hotspot.gui.MobileActionBarSkin");
+	/* defaultButtonAppearance: beveled; */
+	color: white;
+}
+
+s|ActionBar #titleDisplay {
+	fontWeight: normal;
+	color: #000000;
+}
+
+s|ActionBar #titleGroup {
+	fontWeight:normal;
+	color: #FFFFFF;
+}
+
+s|TabbedViewNavigator #tabBar {
+	skinClass: ClassReference("net.fenyo.mail4hotspot.gui.MobileTabbedViewNavigatorTabBarSkin");
+	color: #FFFFFF;
+}
+
+
+s|SpinnerListItemRenderer {
+	paddingTop: 25;
+	paddingBottom: 25;
+	paddingLeft: 25;
+}

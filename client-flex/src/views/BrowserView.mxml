@@ -1,0 +1,402 @@
+<!-- (c) Alexandre Fenyo 2012, 2013, 2014, 2015, 2016 - alex@fenyo.net - http://fenyo.net - GPLv3 licensed -->
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		xmlns:s="library://ns.adobe.com/flex/spark"
+		destructionPolicy="never"
+		viewDeactivate="browserView_deactivateHandler(event)"
+		viewActivate="browserView_viewActivateHandler(event)"
+		creationComplete="browserView_creationCompleteHandler(event)">
+	
+	<fx:Script>
+		<![CDATA[
+			import flash.net.navigateToURL;
+			
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.events.MoveEvent;
+			import mx.managers.PopUpManager;
+			
+			import spark.components.ViewNavigator;
+			import spark.events.IndexChangeEvent;
+			import spark.events.ViewNavigatorEvent;
+			
+			import net.fenyo.mail4hotspot.dns.DnsQuerierFactory;
+			import net.fenyo.mail4hotspot.gui.PopUpBrowserAction;
+			import net.fenyo.mail4hotspot.service.VuMeter;
+
+			private var location_changing_time : Number = new Date().time;
+			private var complete_timer : Timer = null;
+
+			protected var swv : StageWebView;
+
+			// si on  clique sur le bouton Go, on invoque alors swv.loadURL(), donc on aura un location_change() une fois les premiers octets reçus, puis un browser_complete() à la fin
+			// si on clique sur un lien, on aura un location_changing(), puis un un location_change() une fois les premiers octets reçus, puis un browser_complete() à la fin
+			// donc comme on positionne à true browser_running lors de loadURL ou lors de location_changing, pas besoin de le faire lors de location_change
+			// mais attention : parfois l'ordre des location_changing() et location_change() est inversé semble-t-il => si deux sont proches, on considère que c'est un click
+
+			// le pb c'est que quand on clique lors d'un chargement, on a un browser_complete()
+
+			private var browser_running : Boolean = false;
+
+			// heuristique : si on a des données, c'est que le bug de AIR qui fait que quand on clique sur un lien on n'est pas toujours prévenu, s'est produit
+			public function webDataReceived() : void {
+				// trace("BrowserView.webDataReceived()");
+				if (browser_running == false) {
+					disableHeaders();
+					browser_running = true;
+				}
+			}
+
+			public function tabChanged(n : int) : void {
+				if (StageWebView.isSupported && swv != null) {
+					if (!Main.tablet) {
+						if (n != 2) swv.stage = null;
+						else swv.stage = stage;
+					} else {
+						if (n != 1) swv.stage = null;
+						else swv.stage = stage;
+					}
+				}
+			}
+
+			private function enableHeaders() : void {
+				the_url.enabled = true;
+				// button_go.enabled = true;
+				button_go.label = "Go";
+				progress_bar.visible = false;
+				progress_bar.includeInLayout = false;
+				// wait_bar.visible = true;
+				// wait_bar.includeInLayout = true;
+			}
+
+			private function disableHeaders() : void {
+				the_url.enabled = false;
+				// button_go.enabled = false;
+				button_go.label = "Stop";
+				progress_bar.visible = true;
+				progress_bar.includeInLayout = true;
+				// wait_bar.visible = false;
+				// wait_bar.includeInLayout = false;
+			}
+
+			// "Action" button
+			private function button1_clickHandler(event : MouseEvent) : void {
+				// trace("BrowserView.button1_clickHandler()");
+
+				if (StageWebView.isSupported) swv.stage = null;
+				var popUp : PopUpBrowserAction = new PopUpBrowserAction();
+				popUp.open(this, true);
+				popUp.label.width = width * 2 / 3;
+				PopUpManager.centerPopUp(popUp);
+			}
+
+			// "Go" button
+			// race condition quand on est sur l'env de dév (donc très faible latence) : il semble que le stop fasse que le loadURL qui suit ne marche pas toujours
+			// il faudrait postponner le loadURL d'1/2 sec environ
+			private function button2_clickHandler(event : MouseEvent) : void {
+				// trace("BrowserView.button2_clickHandler()");
+
+				if (StageWebView.isSupported && swv != null) {
+					if (button_go.label == "Stop") popup_stop();
+					else {
+						location_changing_time = new Date().time;
+
+						cleanBrowserState();
+						disableHeaders();
+						browser_running = true;
+						
+						// en cas de modification de "Home Page" ou "Page d'Accueil", mettre en cohérence avec les ressources de localisation
+						if (the_url.text == "Home Page" || the_url.text == "Page d'Accueil") swv.loadURL("http://127.0.0.1:8888/mail4hotspot/app/navigation");
+						else if (the_url.text.substr(0, 7) != "http://" && the_url.text.substr(0, 8) != "https://") swv.loadURL("http://127.0.0.1:8888/mail4hotspot/app/navigation?url=http://" + the_url.text);
+						else swv.loadURL("http://127.0.0.1:8888/mail4hotspot/app/navigation?url=" + the_url.text);
+					}
+				}
+			}
+
+			private function location_changing(event : Event) : void {
+				// trace("BrowserView.location_changing()");
+				if (complete_timer != null) {
+					// pour le cas où une opération enchaîne rapidement un browser_complete puis un location_changing (le plus souvent c'est dans l'autre sens)
+					complete_timer.removeEventListener(TimerEvent.TIMER, _browser_complete);
+					complete_timer.stop();
+				}
+				location_changing_time = new Date().time;
+				browser_running = true;
+				disableHeaders();
+			}
+
+			private function _browser_complete(event : TimerEvent) : void {
+				browser_running = false;
+				enableHeaders();
+			}
+
+			private function browser_complete(event : Event) : void {
+				// trace("BrowserView.browser_complete()");
+
+				if (getParamUrl(swv.location) == "http://127.0.0.1:8888/mail4hotspot/app/navigation") the_url.text = resourceManager.getString('localizedContent', 'BrowserView_home_page');
+				else the_url.text = getParamUrl(swv.location);
+
+				if (new Date().time - location_changing_time < 1000) {
+					// trace("click detected");
+					
+				} else {
+					complete_timer = new Timer(5000, 1);
+					complete_timer.addEventListener(TimerEvent.TIMER, _browser_complete);
+					complete_timer.start();
+				}
+			}
+
+			private function location_change(event : Event) : void {
+				// trace("BrowserView.location_change()");
+				location_changing_time = new Date().time;
+				browser_running = true;
+				disableHeaders();
+
+				if (StageWebView.isSupported && swv != null) {
+					if (the_url.enabled == false) {
+						if (getParamUrl(swv.location) == "http://127.0.0.1:8888/mail4hotspot/app/navigation") the_url.text = resourceManager.getString('localizedContent', 'BrowserView_home_page');
+						else the_url.text = getParamUrl(swv.location);
+					}
+				}
+			}
+
+			public function popup_exit() : void {
+				if (StageWebView.isSupported && swv != null) swv.stage = stage;
+			}
+
+			private function getParamUrl(str : String) : String {
+				var pattern : RegExp = /\?url=/;
+				var pos : int = str.search(pattern);
+				if (pos != -1) {
+					var param_url : String = str.substr(pos + 5);
+					pattern = /&/;
+					pos = param_url.search(pattern);
+					if (pos != -1) param_url = param_url.substr(0, pos);
+					return param_url;
+				} else return str;
+			}
+
+			public function popup_stop() : void {
+				if (StageWebView.isSupported && swv != null) {
+					swv.stop();
+					browser_running = false;
+					enableHeaders();
+					DnsQuerierFactory.cancelWebQueries();
+				}
+			}
+
+			public function popup_previous() : void {
+				if (StageWebView.isSupported && swv != null && swv.isHistoryBackEnabled) {
+					cleanBrowserState();
+					disableHeaders();
+					browser_running = true;
+					swv.historyBack();
+				}
+			}
+
+			public function popup_next() : void {
+				if (StageWebView.isSupported && swv != null && swv.isHistoryForwardEnabled) {
+					cleanBrowserState();
+					disableHeaders();
+					browser_running = true;
+					swv.historyForward();
+				}
+			}
+
+			public function popup_home() : void {
+				if (StageWebView.isSupported && swv != null) {
+					cleanBrowserState();
+
+					location_changing_time = new Date().time;
+					disableHeaders();
+					browser_running = true;
+
+					swv.loadURL("http://127.0.0.1:8888/mail4hotspot/app/navigation");
+					the_url.text = resourceManager.getString('localizedContent', 'BrowserView_home_page');
+				}
+			}
+
+			public function popup_external() : void {
+				if (StageWebView.isSupported && swv != null) navigateToURL(new URLRequest(swv.location));
+			}
+
+			private function resizeSWV() : void
+			{
+				// trace("BrowserView.resizeSWV()");
+
+				if (StageWebView.isSupported && swv != null) {
+					if (!Main.tablet) {
+						swv.viewPort = new Rectangle(0, webstage.localToGlobal(new Point(0, 0)).y, width, webstage.height);
+					} else {
+						swv.viewPort = new Rectangle(Main.tablet_leftwidth + 1,
+							webstage.localToGlobal(new Point(0, 0)).y, width, webstage.height);
+					}
+				}
+			}
+
+			// inutile puisque destructionPolicy est à never
+			// private function flexevt(event : FlexEvent) : void {
+			//   if (StageWebView.isSupported && swv != null) swv.dispose();
+			// }
+
+			private function webStageEvent(event : Event) : void {
+				// trace("BrowserView.webStageEvent()");
+				resizeSWV();
+			}
+
+			private function tapHandler(evt:TouchEvent) : void {
+				// trace("BrowserView.tapHandler()");
+			}
+			
+			private function cleanBrowserState() : void {
+				// trace("BrowserView.cleanBrowserState(): state=" + browser_running);
+				if (browser_running) {
+					browser_running = false;
+					swv.stop();
+					DnsQuerierFactory.cancelWebQueries();
+				}
+			}
+
+			private function browserView_creationCompleteHandler(event:FlexEvent) : void {
+				left_screw.source = Main.PictureScrew640;
+				left_screw.scaleX = left_screw.scaleY = left_screw.scaleZ = parentApplication.applicationDPI / 640;
+				right_screw.source = Main.PictureScrew640;
+				right_screw.scaleX = right_screw.scaleY = right_screw.scaleZ = parentApplication.applicationDPI / 640;
+				text_browser.source = Main.TextBrowser640;
+				text_browser.scaleX = text_browser.scaleY = text_browser.scaleZ = parentApplication.applicationDPI / 640;
+
+				if (StageWebView.isSupported) {
+					swv = new StageWebView();					
+					resizeSWV();
+					swv.stage = stage;
+
+					disableHeaders();
+					browser_running = true;
+					swv.loadURL("http://127.0.0.1:8888/mail4hotspot/app/navigation");
+					// inutile puisque destructionPolicy est à never
+					// addEventListener(FlexEvent.REMOVE, flexevt);
+					swv.addEventListener(LocationChangeEvent.LOCATION_CHANGING, location_changing);
+					swv.addEventListener(LocationChangeEvent.LOCATION_CHANGE, location_change);
+					swv.addEventListener(Event.COMPLETE, browser_complete);
+
+					webstage.addEventListener(mx.events.MoveEvent.MOVE, webStageEvent);
+				}
+			}
+			
+			protected function browserView_viewActivateHandler(event:ViewNavigatorEvent):void {
+				stage.addEventListener(KeyboardEvent.KEY_DOWN, onKeyDown);
+			}
+			
+			protected function browserView_deactivateHandler(event:Event):void {
+				stage.removeEventListener(KeyboardEvent.KEY_DOWN, onKeyDown);
+			}
+			
+			protected function onKeyDown(event:KeyboardEvent):void {
+				if (event.keyCode == 10) {
+					event.preventDefault();
+					button2_clickHandler(null);
+					stage.focus = null;
+				}
+			}
+
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Placer ici les éléments non visuels (services et objets de valeur, par exemple). -->
+	</fx:Declarations>
+	
+	<s:layout>
+		<s:VerticalLayout paddingTop="0" paddingBottom="0" paddingLeft="0" paddingRight="0" gap="2" 
+						  horizontalAlign="center" verticalAlign="top"/>
+	</s:layout>
+	
+	<s:titleContent>
+		<s:Graphic x="0" y="0">             
+		<s:BitmapImage id="left_screw" alpha="{ Main.new_skin ? 1 : .5 }" fillMode="clip"/>
+		</s:Graphic>
+		<s:HGroup width="100%" height="100%" horizontalAlign="center" verticalAlign="middle" gap="0">
+			<s:BitmapImage id="text_browser" alpha="{ Main.new_skin ? 1 : .4 }" fillMode="clip"/>
+		</s:HGroup>
+		<s:Graphic x="0" y="0">             
+			<s:BitmapImage id="right_screw" alpha="{ Main.new_skin ? 1 : .5 }"  fillMode="clip"/>
+		</s:Graphic>
+	</s:titleContent>
+
+	<s:SkinnableContainer height="100%" width="100%" backgroundColor="{ Main.skin_bgcolor }">
+		
+		<!-- paddingTop="10" posait des pbs quand on cliquait sur le bouton stop en 640 dpi : une ligne blanche s'affichait au dessus du bouton -->
+		<s:VGroup paddingLeft="10" paddingRight="10" paddingTop="{ Main.browserViewPaddingTop }" paddingBottom="0" width="100%" height="100%">
+			
+			<s:HGroup width="100%">
+				<!-- <s:TextInput id="the_url" returnKeyLabel="done" skinClass="spark.skins.mobile.StageTextInputSkin" softKeyboardType="number" textAlign="left" width="100%"/> -->
+				<!-- marche pas avec la skin pour les soft keyboards - en plus, ca efface de temps en temps le contenu, voir ca le met au mauvais endroit si on déplace verticalement le controle
+				précisément : il faut StageTextInputSkin pour que returnKeyLabel fonctionne, mais c'est bien le seul car softKeyboardType marche pas
+				-->
+				<s:TextInput enter="stage.focus = null; button2_clickHandler(null)" id="the_url" textAlign="left" width="100%" skinClass="spark.skins.mobile.TextInputSkin" contentBackgroundAlpha=".8"/>
+
+				<s:Button height="{ the_url.height }" id="button_go" fontSize="{ parentApplication.labelFontSize }" click="button2_clickHandler(event)" label="Go"/>
+				
+				<s:Button height="{ the_url.height }" id="button" fontSize="{ parentApplication.labelFontSize }" click="button1_clickHandler(event)" label="Action"/>
+			</s:HGroup>
+
+			<!-- <s:Label id="wait_bar" color="black" text="{ resourceManager.getString('localizedContent', 'BrowserView_wait_bar') }" fontSize="{ parentApplication.labelFontSize }"/> -->
+			<!-- progress bar -->
+			<s:BorderContainer id="progress_bar" borderWeight="2" width="100%" cornerRadius="10" borderColor="#B3B3B3" backgroundColor="#998675" backgroundAlpha="0" borderVisible="true">
+				<s:layout>
+					<s:VerticalLayout 
+						paddingLeft="5" paddingRight="5" 
+						paddingTop="5" paddingBottom="5" gap="2"/>
+				</s:layout>
+				<s:Label color="black" text="{ VuMeter.progress_bar_for_messages_text }" fontSize="{ parentApplication.labelFontSize }"/>
+				<s:BorderContainer id="border_container_1" height="26" backgroundAlpha="0" borderWeight="2" width="100%" borderColor="#B3B3B3">
+					
+					<s:Rect x="1" y="1" alpha="1" width="{ (border_container_1.width - 6) * VuMeter.progress_bar_for_messages_ratio / 1000 }" height="20">
+						<s:fill>
+							<s:LinearGradient x="60" y="24" scaleX="24" rotation="270">
+								<s:GradientEntry ratio="0" color="#006837"/>
+								<s:GradientEntry ratio="0.408822" color="#036A37"/>
+								<s:GradientEntry ratio="0.639392" color="#127739"/>
+								<s:GradientEntry ratio="0.741464" color="#23833A"/>
+								<s:GradientEntry ratio="0.834089" color="#39953D"/>
+								<s:GradientEntry ratio="1" color="#7AC943"/>
+							</s:LinearGradient>
+						</s:fill>
+					</s:Rect>
+					
+					<s:Rect x="1" y="1" alpha="1" width="{ border_container_1.width - 6 }" height="20">
+						<s:fill>
+							<s:LinearGradient x="219" y="24" scaleX="24" rotation="270">
+								<s:GradientEntry ratio="0" color="#808080"/>
+								<s:GradientEntry ratio="0.220582" color="#767676" alpha="0.779418"/>
+								<s:GradientEntry ratio="0.469662" color="#5D5D5D" alpha="0.530338"/>
+								<s:GradientEntry ratio="0.730109" color="#353535" alpha="0.269891"/>
+								<s:GradientEntry ratio="1" alpha="0"/>
+							</s:LinearGradient>
+						</s:fill>
+					</s:Rect>
+				</s:BorderContainer>
+			</s:BorderContainer>
+			<!-- -->
+
+			<s:VGroup id="webstage" height="100%" width="100%">
+			</s:VGroup>
+		<!--
+		<s:Rect id="webstage" height="100%" width="100%">
+			<s:fill>
+				<s:LinearGradient x="60" y="24" scaleX="24" rotation="270">
+					<s:GradientEntry ratio="0" color="#006837"/>
+					<s:GradientEntry ratio="0.408822" color="#036A37"/>
+					<s:GradientEntry ratio="0.639392" color="#127739"/>
+					<s:GradientEntry ratio="0.741464" color="#23833A"/>
+					<s:GradientEntry ratio="0.834089" color="#39953D"/>
+					<s:GradientEntry ratio="1" color="#7AC943"/>
+				</s:LinearGradient>
+			</s:fill>
+		</s:Rect>
+        -->
+			
+		</s:VGroup>
+	</s:SkinnableContainer>
+	
+</s:View>

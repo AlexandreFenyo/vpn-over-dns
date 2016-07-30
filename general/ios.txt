@@ -1,0 +1,34 @@
+dans xcode :
+File / New / New project
+choisir Empty application
+
+product name: dns
+company identifier: fr.fenyo
+class prefix: appli
+
+choisir le répertoire xcode : c'est dans ce rept que le rept dns et le rept dns.xcodeproj seront créés
+
+aller dans la fenetre organiser
+
+créer le repository svn+ssh://fenyo@192.168.1.12/home/fenyo/svnrep/mail4hotspot/ios
+avec trunk pour trunk, et pareil pour les 2 autres repts std de svn
+faire un commit
+
+créer les 3 reps std svn sous gw:/home/fenyo/svn/.../ios/
+faire une commit
+
+ca les fait passer en vert (au lieu de rouge précédemment) sur le mac os x
+
+choisir le rept trunk dans la fenetre repository dans le repository gw
+cliquer import puis importer le rept racine dns (qui contient dns et dns.xcodeproj)
+
+cloturer le projet et effacer le rept /Users/User/devel/dns
+
+selectionner le rept racine dns dans trunk du repository et cliquer sur checkout, puis sélectionner save as "dns" et le rept devel
+
+rajouter la librairie CFNetwork : cliquer sur le projet, sélectionner la
+target dns, aller dans build phases, sélectionner link binary with libraries,
+rajouter CFNetwork.framework
+
+
+

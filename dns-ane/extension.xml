@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<extension xmlns="http://ns.adobe.com/air/extension/16.0">
+  <id>net.fenyo.extension.DnsExtension</id>
+  <versionNumber>0.0.1</versionNumber>
+  <platforms>
+    <platform name="Android-ARM">
+      <applicationDeployment>
+        <nativeLibrary>DnsExtension.jar</nativeLibrary>
+        <initializer>net.fenyo.extension.Dns.DnsExtension</initializer>
+        <finalizer>net.fenyo.extension.Dns.DnsExtension</finalizer>
+      </applicationDeployment>
+    </platform>
+    <platform name="iPhone-ARM">
+      <applicationDeployment/>
+    </platform>
+    <platform name="Windows-x86">
+      <applicationDeployment/>
+    </platform>
+    <platform name="default">
+      <applicationDeployment/>
+    </platform>
+  </platforms>
+</extension>

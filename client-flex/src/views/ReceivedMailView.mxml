@@ -1,0 +1,140 @@
+<!-- (c) Alexandre Fenyo 2012, 2013, 2014, 2015, 2016 - alex@fenyo.net - http://fenyo.net - GPLv3 licensed -->
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009"
+		xmlns:s="library://ns.adobe.com/flex/spark"
+		creationComplete="receivedMailView_creationCompleteHandler(event)"
+		viewDeactivate="receivedMailView_deactivateHandler(event)"
+		viewActivate="receivedMailView_viewActivateHandler(event)"
+		backgroundColor="{ Main.skin_bgcolor }">
+
+	<fx:Declarations>
+		<!-- Placer ici les éléments non visuels (services et objets de valeur, par exemple). -->
+	</fx:Declarations>
+
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+			import mx.core.*;
+			import mx.events.*;
+			
+			import net.fenyo.mail4hotspot.service.*;
+			import net.fenyo.mail4hotspot.tools.*;
+			
+			import spark.components.ViewNavigator;
+			import spark.events.IndexChangeEvent;
+			import spark.events.ViewNavigatorEvent;
+			import spark.managers.*;
+
+			protected function button1_clickHandler(event : MouseEvent) : void {
+				var i : int = 0;
+				while (i < parentApplication.mailsDataProvider.length) {
+					if (parentApplication.mailsDataProvider.getItemAt(i).message_id == data.message_id) {
+						parentApplication.mailsDataProvider.removeItemAt(i);
+						parentApplication.persistenceManager.setProperty("mailsDataProvider", parentApplication.mailsDataProvider.list);
+						parentApplication.persistenceManager.save();
+						navigator.popToFirstView();
+						return;
+					}
+					i++;
+				}
+				trace("ReceivedMailView.button1_clickHandler(): ERROR: cannot find this mail");
+				navigator.popToFirstView();
+			}
+			
+			protected function button2_clickHandler(event : MouseEvent) : void {
+				views.CreateMailView.field_pre_to = data.from;
+				views.CreateMailView.field_pre_subject = "Re: " + data.subject;
+				views.CreateMailView.field_pre_content = data.content;
+				navigator.pushView(views.CreateMailView);
+			}
+
+			private function receivedMailView_creationCompleteHandler(event:FlexEvent) : void {
+				if (data.message_id == "VPN-over-DNS") button_reply_mail.enabled = false;
+
+				text_mail.source = Main.TextMail640;
+				text_mail.scaleX = text_mail.scaleY = text_mail.scaleZ = parentApplication.applicationDPI / 640;
+			}
+			
+			protected function receivedMailView_viewActivateHandler(event:ViewNavigatorEvent):void {
+				stage.addEventListener(KeyboardEvent.KEY_DOWN, onKeyDown);
+			}
+			
+			protected function receivedMailView_deactivateHandler(event:Event):void {
+				stage.removeEventListener(KeyboardEvent.KEY_DOWN, onKeyDown);
+			}
+			
+			protected function onKeyDown(event:KeyboardEvent):void {
+				if (event.keyCode == Keyboard.BACK) {
+					event.preventDefault();
+					navigator.popToFirstView();
+				} 
+				else if (event.keyCode == Keyboard.MENU) {} 
+				else if (event.keyCode == Keyboard.SEARCH) {}
+			}
+
+		]]>
+	</fx:Script>
+
+	<s:layout>
+		<s:VerticalLayout paddingTop="0" paddingBottom="0" paddingLeft="0" paddingRight="0" gap="2" 
+						  horizontalAlign="center" verticalAlign="top"/>
+	</s:layout>
+	
+	<s:navigationContent>
+		<s:Button id="back" click="navigator.popToFirstView()" alpha=".8" styleName="back"/>
+	</s:navigationContent>
+
+	<s:titleContent>
+		<s:HGroup width="100%" height="100%" horizontalAlign="center" verticalAlign="middle" gap="0">
+			<s:BitmapImage id="text_mail" alpha="{ Main.new_skin ? 1 : .4 }" fillMode="clip"/>
+		</s:HGroup>
+	</s:titleContent>
+
+	<s:HGroup paddingTop="8" paddingBottom="8" paddingLeft="8" paddingRight="8" width="100%" horizontalAlign="center">
+		<s:Button id="button_delete_mail" width="40%" label="{ resourceManager.getString('localizedContent', 'ReceivedMailView_button') }" click="button1_clickHandler(event)">
+			<s:filters>
+				<s:DropShadowFilter alpha=".5" distance="3" angle="45"/>
+			</s:filters>
+		</s:Button>
+		<s:Rect width="5%"/>
+		<s:Button id="button_reply_mail" width="40%" label="{ resourceManager.getString('localizedContent', 'ReceivedMailView_button2') }" click="button2_clickHandler(event)">
+			<s:filters>
+				<s:DropShadowFilter alpha=".5" distance="3" angle="45"/>
+			</s:filters>
+		</s:Button>
+	</s:HGroup>
+
+	<s:SkinnableContainer width="100%" height="100%" skinClass="net.fenyo.mail4hotspot.gui.MobileSkinnableContainerSkin">
+		<s:Scroller left="5" right="5" top="5" bottom="5" width="100%" height="100%">
+			
+			<s:VGroup paddingLeft="5" paddingRight="5" paddingTop="5" paddingBottom="5" width="100%" height="100%">
+				
+				<s:Label width="100%" backgroundAlpha="0" fontSize="{ parentApplication.smallLabelFontSize }" fontWeight="bold"
+						 text="{ resourceManager.getString('localizedContent', 'MailView_From') + ' ' + data.from }"/>
+
+				<s:Label width="100%" backgroundAlpha="0" fontSize="{ parentApplication.smallLabelFontSize }" fontWeight="bold"
+						 text="{ resourceManager.getString('localizedContent', 'MailView_To') + ' ' + data.to }"/>
+
+				<s:Label width="100%" backgroundAlpha="0" fontSize="{ parentApplication.smallLabelFontSize }" fontWeight="bold"
+						 text="{ resourceManager.getString('localizedContent', 'MailView_Cc') + ' ' + data.cc }"/>
+
+				<s:Label width="100%" backgroundAlpha="0" fontSize="{ parentApplication.smallLabelFontSize }" fontWeight="bold"
+						 text="{ resourceManager.getString('localizedContent', 'MailView_Date') + ' ' + data.sent_date }"/>
+
+				<s:Label width="100%" backgroundAlpha="0" fontSize="{ parentApplication.smallLabelFontSize }" fontWeight="bold"
+						 text="{ resourceManager.getString('localizedContent', 'MailView_Subject') + ' ' + data.subject }"/>
+<!--		<s:Label backgroundAlpha="0" text="To: { data.to }"/>
+		<s:Label backgroundAlpha="0" text="Cc: { data.cc }"/>
+		<s:Label backgroundAlpha="0" text="Subject: { data.subject }"/>
+		<s:Label backgroundAlpha="0" text="Date: { data.sent_date }"/> -->
+		<s:Line width="100%">
+			<s:stroke><s:SolidColorStroke color="0x000000" weight="1" joints="miter"/></s:stroke>
+		</s:Line>
+				<s:Label width="100%" backgroundAlpha="0" fontSize="{ parentApplication.smallLabelFontSize }"
+						 text="{ data.content }"/>
+
+			</s:VGroup>
+		</s:Scroller>
+	</s:SkinnableContainer>
+
+</s:View>

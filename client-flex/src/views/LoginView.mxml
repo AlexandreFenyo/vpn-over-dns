@@ -1,0 +1,164 @@
+<!-- (c) Alexandre Fenyo 2012, 2013, 2014, 2015, 2016 - alex@fenyo.net - http://fenyo.net - GPLv3 licensed -->
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009"
+		xmlns:s="library://ns.adobe.com/flex/spark"
+		xmlns:mx="library://ns.adobe.com/flex/mx"
+		creationComplete="loginView_creationCompleteHandler(event)"
+		viewActivate="loginView_viewActivateHandler(event)">
+
+	<fx:Script>
+		<![CDATA[
+			import mx.core.FlexGlobals;
+			import spark.components.supportClasses.StyleableStageText;
+			import spark.components.supportClasses.StyleableTextField;
+			import mx.events.*;
+			import spark.components.*;
+			import spark.events.*;
+			import mx.managers.*;
+			import mx.resources.ResourceManager;
+
+			import net.fenyo.mail4hotspot.gui.*;
+			import net.fenyo.mail4hotspot.service.*;
+			import net.fenyo.mail4hotspot.tools.*;
+
+			import views.*;
+
+			private function loginView_creationCompleteHandler(event:FlexEvent) : void {
+				// Alex
+				left_screw.source = Main.PictureScrew640;
+				left_screw.scaleX = left_screw.scaleY = left_screw.scaleZ = parentApplication.applicationDPI / 640;
+				right_screw.source = Main.PictureScrew640;
+				right_screw.scaleX = right_screw.scaleY = right_screw.scaleZ = parentApplication.applicationDPI / 640;
+
+				if (resourceManager.localeChain[0].toString().substr(0, 2) == "fr") text_identite.source = Main.TextIdentite640;
+				else text_identite.source = Main.TextIdent640;
+				text_identite.scaleX = text_identite.scaleY = text_identite.scaleZ = parentApplication.applicationDPI / 640;
+			}
+
+			private function loginView_viewActivateHandler(event:ViewNavigatorEvent) : void {
+				if (parentApplication.popup_intro_appeared == false) {
+					parentApplication.popup_intro_appeared = true;
+					var popUp : PopUpIntro = new PopUpIntro();
+					popUp.open(this, true);
+					popUp.label.width = width * 2 / 3;
+					PopUpManager.centerPopUp(popUp);
+				}
+			}
+
+			protected function button1_clickHandler(event:MouseEvent) : void
+			{
+				navigator.pushView(views.CreateAccountView);
+			}
+
+			protected function button2_clickHandler(event:MouseEvent) : void
+			{
+				navigator.pushView(views.AttachAccountView);
+			}
+
+			protected function button3_clickHandler(event:MouseEvent) : void
+			{
+				// auto-login
+				parentApplication.persistenceManager.setProperty("login", "fenyoa");
+				parentApplication.persistenceManager.setProperty("password", "PASSWORD");
+				parentApplication.persistenceManager.setProperty("uuid", "7777777");
+				parentApplication.persistenceManager.setProperty("provider", "GMAIL");
+				parentApplication.persistenceManager.setProperty("provider_email", "alexandre.fenyo@gmail.com");
+				parentApplication.persistenceManager.setProperty("provider_login", "alexandre.fenyo@gmail.com");
+				parentApplication.persistenceManager.setProperty("provider_password", "PASSWORD");
+				parentApplication.persistenceManager.setProperty("loggedIn", "true");
+				parentApplication.persistenceManager.save();
+
+				parentApplication.viewnavigator_login.visible = false;
+				if (!Main.tablet) {
+					parentApplication.viewnavigator_main.visible = true;
+				} else {
+					parentApplication.tablet_splitviewnavigator.visible = true;
+				}
+				
+				var popUp : PopUpAttach = new PopUpAttach();
+				popUp.open(this, true);
+				popUp.label.width = width * 2 / 3;
+				PopUpManager.centerPopUp(popUp);
+			}
+]]>
+	</fx:Script>
+
+	<fx:Declarations>
+		<!-- Placer ici les éléments non visuels (services et objets de valeur, par exemple). -->
+	</fx:Declarations>
+
+	<s:layout>
+		<s:VerticalLayout paddingTop="0" paddingBottom="0" paddingLeft="0" paddingRight="0" gap="2" 
+						  horizontalAlign="center" verticalAlign="top"/>
+	</s:layout>
+
+	<s:titleContent>
+		<s:Graphic x="0" y="0">             
+			<s:BitmapImage id="left_screw" alpha="{ Main.new_skin ? 1 : .5 }" fillMode="clip"/>
+		</s:Graphic>
+		<s:HGroup width="100%" height="100%" horizontalAlign="center" verticalAlign="middle" gap="0">
+			<s:BitmapImage id="text_identite" alpha="{ Main.new_skin ? 1 : .4 }" fillMode="clip"/>
+		</s:HGroup>
+		<s:Graphic x="0" y="0">             
+			<s:BitmapImage id="right_screw" alpha="{ Main.new_skin ? 1 : .5 }"  fillMode="clip"/>
+		</s:Graphic>
+	</s:titleContent>
+
+	<s:SkinnableContainer width="100%" height="100%" skinClass="net.fenyo.mail4hotspot.gui.MobileSkinnableContainerSkin">
+		<s:Scroller left="5" right="5" top="5" bottom="5" width="100%" height="100%">
+			
+			<s:VGroup paddingLeft="5" paddingRight="5" paddingTop="5" paddingBottom="5" width="100%" height="100%">
+
+				<s:Label visible="{ Main.release_info_account_type == 'PAY' }" includeInLayout="{ Main.release_info_account_type == 'PAY' }" fontStyle="italic" textAlpha=".5" color="#FFFFFF" backgroundAlpha=".5" backgroundColor="#080000" width="100%" fontSize="{ parentApplication.headerFontSize }"
+						 text="{ resourceManager.getString('localizedContent', 'LoginView_create_header') }">
+					<s:filters>
+						<s:DropShadowFilter alpha=".5" distance="3" angle="45"/>
+					</s:filters>
+				</s:Label>
+				
+				<s:Label visible="{ Main.release_info_account_type == 'PAY' }" includeInLayout="{ Main.release_info_account_type == 'PAY' }" width="100%" fontSize="{ parentApplication.labelFontSize }"
+						 text="{ resourceManager.getString('localizedContent', 'LoginView_create') }"/>
+				<s:Label visible="{ Main.release_info_account_type == 'PAY' }" includeInLayout="{ Main.release_info_account_type == 'PAY' }" width="100%" fontSize="{ parentApplication.smallLabelFontSize }"
+						 text="{ resourceManager.getString('localizedContent', 'LoginView_create_small') }"/>
+
+			<s:Button visible="{ Main.release_info_account_type == 'PAY' }" includeInLayout="{ Main.release_info_account_type == 'PAY' }" width="100%" label="{ resourceManager.getString('localizedContent', 'LoginView_create_button') }" click="button1_clickHandler(event)">
+				<s:filters>
+					<s:DropShadowFilter alpha=".5" distance="3" angle="45"/>
+				</s:filters>
+			</s:Button>
+
+				<s:Rect visible="{ Main.release_info_account_type == 'PAY' }" includeInLayout="{ Main.release_info_account_type == 'PAY' }" height="4"/>
+				<s:Line visible="{ Main.release_info_account_type == 'PAY' }" includeInLayout="{ Main.release_info_account_type == 'PAY' }" width="100%">
+					<s:stroke><s:SolidColorStroke color="0x000000" weight="1" joints="miter"/></s:stroke>
+				</s:Line>
+
+				<s:Label fontStyle="italic" textAlpha=".5" color="#FFFFFF" backgroundAlpha=".5" backgroundColor="#080000" width="100%" fontSize="{ parentApplication.headerFontSize }"
+						 text="{ resourceManager.getString('localizedContent', 'LoginView_attach_header') }">
+					<s:filters>
+						<s:DropShadowFilter alpha=".5" distance="3" angle="45"/>
+					</s:filters>
+				</s:Label>
+				
+				<s:Label visible="{ Main.release_info_account_type == 'PAY' }" includeInLayout="{ Main.release_info_account_type == 'PAY' }" width="100%" fontSize="{ parentApplication.labelFontSize }"
+						 text="{ resourceManager.getString('localizedContent', 'LoginView_attach') }"/>
+				<s:Label visible="{ Main.release_info_account_type == 'PAY' }" includeInLayout="{ Main.release_info_account_type == 'PAY' }" width="100%" fontSize="{ parentApplication.smallLabelFontSize }"
+						 text="{ resourceManager.getString('localizedContent', 'LoginView_attach_small') }"/>
+				
+			<s:Button width="100%" label="{ resourceManager.getString('localizedContent', 'LoginView_attach_button') }" click="button2_clickHandler(event)">
+				<s:filters>
+					<s:DropShadowFilter alpha=".5" distance="3" angle="45"/>
+				</s:filters>
+			</s:Button>
+
+				<s:Rect visible="{ Main.release_info_debug_tools }" height="300"/>
+				<s:Button visible="{ Main.release_info_debug_tools }" width="100%" label="debug: auto-login" click="button3_clickHandler(event)">
+					<s:filters>
+						<s:DropShadowFilter alpha=".5" distance="3" angle="45"/>
+					</s:filters>
+				</s:Button>
+
+		</s:VGroup>
+		</s:Scroller>
+	</s:SkinnableContainer>
+
+</s:View>

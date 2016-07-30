@@ -1,0 +1,498 @@
+<!-- (c) Alexandre Fenyo 2012, 2013, 2014, 2015, 2016 - alex@fenyo.net - http://fenyo.net - GPLv3 licensed -->
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009"
+		xmlns:mx="library://ns.adobe.com/flex/mx"
+		xmlns:s="library://ns.adobe.com/flex/spark"
+		xmlns:jeeserver="net.fenyo.mail4hotspot.dataservices.jeeserver.*"
+		creationComplete="setProviderView_creationCompleteHandler(event)"
+		viewDeactivate="setProviderView_deactivateHandler(event)"
+		viewActivate="setProviderView_viewActivateHandler(event)">
+<!--
+	pb : on peut changer de tab quand on est en cours d'envoi de ses credentials mail, il faudrait supprimer la tab bar temporairement
+	c'est un bug à corriger en utilisant le bas de la page suivante :
+	http://help.adobe.com/en_US/flex/mobileapps/WS77c1dbb1bd80d383527e1a6412a8a5d909a-8000.html -->
+	
+	<fx:Declarations>
+		<s:ArrayList id="mailProvider">
+			<fx:Object name="" icon=""/> <!--  icon="@Embed(source = 'assets/dns160.png' )" -->
+			<fx:Object name="" icon=""/>
+<!--			<fx:Object name="DEMO" icon=""/> -->
+			<fx:Object name="" icon=""/>
+			<fx:Object name="" icon=""/>
+		</s:ArrayList>
+	</fx:Declarations>
+
+	<fx:Script>
+		<![CDATA[
+			import flash.net.dns.*;
+			
+			import mx.collections.ArrayCollection;
+			import mx.collections.ArrayList;
+			import mx.core.*;
+			import mx.events.*;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.URLUtil;
+			import mx.managers.*;
+			
+			import net.fenyo.extension.Ssl;
+			import net.fenyo.mail4hotspot.service.*;
+			import net.fenyo.mail4hotspot.tools.*;
+			import net.fenyo.mail4hotspot.gui.*;
+			
+			import spark.events.IndexChangeEvent;
+			import spark.events.ViewNavigatorEvent;
+			import spark.managers.*;
+
+			private static const ssl : Ssl = new Ssl();
+
+			private var focus_component : String = "";
+			
+			private function getMailProvider() : ArrayList {
+
+				text_mail.source = Main.TextMail640;
+				text_mail.scaleX = text_mail.scaleY = text_mail.scaleZ = parentApplication.applicationDPI / 640;
+
+				var factor : Number = FlexGlobals.topLevelApplication.applicationDPI / 640;
+				var matrix : Matrix = new Matrix();
+				matrix.scale(factor, factor);
+				
+				var pic : BitmapAsset = new Main.PictureGmail640() as BitmapAsset;
+				var newpic : BitmapData = new BitmapData(pic.width * factor, pic.height * factor, true, 0);
+				newpic.draw(pic, matrix, null, null, null, true);
+				mailProvider.getItemAt(0).icon = newpic;			
+
+				pic = new Main.PictureHotmail640() as BitmapAsset;
+				newpic = new BitmapData(pic.width * factor, pic.height * factor, true, 0);
+				newpic.draw(pic, matrix, null, null, null, true);
+				mailProvider.getItemAt(1).icon = newpic;			
+
+				pic = new Main.PictureOperamail640() as BitmapAsset;
+				newpic = new BitmapData(pic.width * factor, pic.height * factor, true, 0);
+				newpic.draw(pic, matrix, null, null, null, true);
+				mailProvider.getItemAt(2).icon = newpic;			
+
+				pic = new Main.PictureYahoomail640() as BitmapAsset;
+				newpic = new BitmapData(pic.width * factor, pic.height * factor, true, 0);
+				newpic.draw(pic, matrix, null, null, null, true);
+				mailProvider.getItemAt(3).icon = newpic;			
+
+				return mailProvider;
+			}
+
+			private function setProviderView_creationCompleteHandler(event:FlexEvent) : void {
+				// il faudrait les supprimer quand la vue n'est plus utilisée
+				errorLabel.addEventListener(Event.RESIZE, setErrorPosition);
+				errorLabel.addEventListener(mx.events.MoveEvent.MOVE, setErrorPosition);
+
+				stage.addEventListener(KeyboardEvent.KEY_DOWN, onKeyDown);
+				switch (parentApplication.persistenceManager.getProperty('provider')) {
+					case 'GMAIL':
+						spinnerList.selectedIndex = 0;
+						break;
+					
+					case 'HOTMAIL':
+						spinnerList.selectedIndex = 1;
+						break;
+					
+					case 'OPERAMAIL':
+						spinnerList.selectedIndex = 2;
+						break;
+
+					case 'YAHOO':
+						spinnerList.selectedIndex = 3;
+						break;
+				}
+			}
+
+			private function setErrorPosition(event : Event) : void {
+				// trace("setProviderView.setErrorPosition():" + errorLabel.y + "-" + errorLabel.height + "-" + scrollgroup.height);
+				if (errorLabel.y + errorLabel.height > scrollgroup.height)
+					scrollgroup.verticalScrollPosition = errorLabel.y + errorLabel.height - scrollgroup.height;
+			}
+
+			private function displayError(errorString:String):void {
+				errorLabel.text = resourceManager.getString('localizedContent', errorString);
+				line.visible = true;
+				line.includeInLayout = true;
+				errorLabel.visible = true;
+				errorLabel.includeInLayout = true;
+				button.visible = true;
+				button.includeInLayout = true;
+				busy.visible = false;
+				busy.includeInLayout = false;
+
+				setErrorPosition(null);
+			}
+			
+			private function displayBusy():void {
+				line.visible = false;
+				line.includeInLayout = false;
+				errorLabel.visible = false;
+				errorLabel.includeInLayout = false;
+				button.visible = false;
+				button.includeInLayout = false;
+				busy.visible = true;
+				busy.includeInLayout = true;
+			}
+
+			protected function button_clickHandler(event:MouseEvent):void
+			{
+				if (login.text.length == 0) {
+					displayError("SetProviderView_error_login_empty");
+				} else if (password.text != password2.text) {
+					displayError('CreateAccountView_password2InputError');
+				} else if (password.text.length == 0) {
+					displayError("SetProviderView_error_password_empty");
+				} else {
+					var provider : String;
+					switch (spinnerList.selectedIndex) {
+						case 0:
+							provider = "GMAIL";
+							break;
+						
+						case 1:
+							provider = "HOTMAIL";
+							break;
+						
+						case 2:
+							provider = "OPERAMAIL";
+							break;
+						
+						case 3:
+							provider = "YAHOO";
+							break;
+					}
+					
+					// bug à corriger : on peut qd même revenir à la vue précédente par les boutons en bas
+					back.enabled = false;
+					login.enabled = false;
+					password.enabled = false;
+					password2.enabled = false;
+					spinnerContainer.enabled = false;
+					
+					if (!DNSResolver.isSupported) {
+						
+						ssl.addEventListener(StatusEvent.STATUS, onStatus);
+						ssl.get('https://www.vpnoverdns.com/mail4hotspot/app/mobile-set-user',
+							'username=' + escape(parentApplication.persistenceManager.getProperty('login')) +
+							'&password=' + escape(parentApplication.persistenceManager.getProperty('password')) +
+							'&provider=' + escape(provider) +
+							'&provider_email=' + escape(login.text) +
+							'&provider_login=' + escape(login.text) +
+							'&provider_password=' + escape(password.text) +
+							'&info=' + escape(Main.getReleaseInfos()),
+							10000);
+						
+					} else {
+						
+						SetProviderResult.addEventListener(ResultEvent.RESULT, setProviderView_actionHandler);
+						SetProviderResult.addEventListener(FaultEvent.FAULT, setProviderView_errorHandler);
+						SetProviderResult.token =
+							jeeserver.MobileSetUser(parentApplication.persistenceManager.getProperty('login'),
+								parentApplication.persistenceManager.getProperty('password'),
+								provider,
+								login.text,
+								login.text,
+								password.text,
+								Main.getReleaseInfos());
+						
+					}
+					
+					displayBusy();
+				}
+			}
+
+			// Android
+			private function onStatus(event : StatusEvent) : void {
+				ssl.removeEventListener(StatusEvent.STATUS, onStatus);
+				
+				// event.code: ERROR or OK
+				// event.level
+				// trace('SetProviderView.onStatus(): event.code=' + event.code);
+				// trace('SetProviderView.onStatus(): event.level=' + event.level);
+				
+				if (event.code != "OK") setProviderView_errorHandler(event);
+				else setProviderView_action(GenericTools.getXMLField(event.level, "statusCode"));
+			}
+
+			private function setProviderView_errorHandler(event : Event):void {
+				back.enabled = true;
+				login.enabled = true;
+				password.enabled = true;
+				password2.enabled = true;
+				spinnerContainer.enabled = true;
+
+				displayError('SetProviderView_error');
+			}
+
+			private function setProviderView_actionHandler(event:Event):void {
+				setProviderView_action(SetProviderResult.lastResult.statusCode);
+			}
+
+			private function setProviderView_action(statusCode : String) : void {
+				back.enabled = true;
+				login.enabled = true;
+				password.enabled = true;
+				password2.enabled = true;
+				spinnerContainer.enabled = true;
+
+				// statusCode returned values:
+				//   253: bad provider
+				//   254: no such user
+				//   255: other error
+				//   0: OK
+				//   1: invalid password
+				// trace("statusCode: " + SetProviderResult.lastResult.statusCode);
+
+				switch (statusCode) {
+					case '254':
+						displayError('SetProviderView_loginError');
+						break;
+
+					case '0':
+						line.visible = false;
+						line.includeInLayout = false;
+						errorLabel.visible = false;
+						errorLabel.includeInLayout = false;
+						button.visible = true;
+						button.includeInLayout = true;
+						busy.visible = false;
+						busy.includeInLayout = false;
+						var provider : String;
+
+						switch (spinnerList.selectedIndex) {
+							case 0:
+								provider = "GMAIL";
+								break;
+							
+							case 1:
+								provider = "HOTMAIL";
+								break;
+							
+							case 2:
+								provider = "OPERAMAIL";
+								break;
+							
+							case 3:
+								provider = "YAHOO";
+								break;
+						}
+						parentApplication.persistenceManager.setProperty("provider", provider);
+						parentApplication.persistenceManager.setProperty("provider_email", login.text);
+						parentApplication.persistenceManager.setProperty("provider_login", login.text);
+						// parentApplication.persistenceManager.setProperty("provider_password", password.text);
+						parentApplication.persistenceManager.save();
+						
+						password.text = "";
+						password2.text = "";
+						navigator.popToFirstView();
+
+						if (provider == "GMAIL") {
+							var popUpGoogle : PopUpGoogle = new PopUpGoogle();
+							popUpGoogle.open(this, true);
+							popUpGoogle.label.width = width * 2 / 3;
+							PopUpManager.centerPopUp(popUpGoogle);
+						}
+
+						if (provider == "YAHOO") {
+							var popUpYahoo : PopUpYahoo = new PopUpYahoo();
+							popUpYahoo.open(this, true);
+							popUpYahoo.label.width = width * 2 / 3;
+							PopUpManager.centerPopUp(popUpYahoo);
+						}
+
+						break;
+					
+					default:
+						displayError('SetProviderView_serverError');
+						break;
+				}
+			}
+
+			protected function setProviderView_viewActivateHandler(event:ViewNavigatorEvent):void {
+				stage.addEventListener(KeyboardEvent.KEY_DOWN, onKeyDown);
+			}
+			
+			protected function setProviderView_deactivateHandler(event:Event):void
+			{
+				stage.removeEventListener(KeyboardEvent.KEY_DOWN, onKeyDown);
+				SetProviderResult.token = null;
+
+			}
+
+			protected function onKeyDown(event:KeyboardEvent):void
+			{
+				if (event.keyCode == 10) {
+					event.preventDefault();
+					const comp : String = focus_component;
+					if (comp == "login") password.setFocus();
+					if (comp == "password") password2.setFocus();
+					if (comp == "password2") {
+						button.setFocus();
+						stage.focus = null;
+					}
+				}
+
+				if (busy.visible == false) {
+					if (event.keyCode == Keyboard.BACK) {
+						event.preventDefault();
+						navigator.popToFirstView();
+					} 
+					else if (event.keyCode == Keyboard.MENU) {} 
+					else if (event.keyCode == Keyboard.SEARCH) {}
+				}
+			}
+
+		]]>
+	</fx:Script>
+
+	<fx:Declarations>
+		<s:CallResponder id="SetProviderResult"/>
+		<jeeserver:Jeeserver id="jeeserver"/>
+	</fx:Declarations>
+
+	<s:layout>
+		<s:VerticalLayout paddingTop="0" paddingBottom="0" paddingLeft="0" paddingRight="0" gap="2" 
+						  horizontalAlign="center" verticalAlign="top"/>
+	</s:layout>
+
+	<s:navigationContent>
+		<s:Button id="back" click="navigator.popToFirstView()" alpha=".8" styleName="back"/>
+	</s:navigationContent>
+
+	<s:titleContent>
+		<s:HGroup width="100%" height="100%" horizontalAlign="center" verticalAlign="middle" gap="0">
+			<s:BitmapImage id="text_mail" alpha="{ Main.new_skin ? 1 : .4 }" fillMode="clip"/>
+		</s:HGroup>
+	</s:titleContent>
+	
+	<s:SkinnableContainer width="100%" height="100%" skinClass="net.fenyo.mail4hotspot.gui.MobileSkinnableContainerSkin">
+		<s:Scroller left="5" right="5" top="5" bottom="5" width="100%" height="100%">
+
+			<s:VGroup id="scrollgroup" paddingLeft="5" paddingRight="5" paddingTop="5" paddingBottom="5" width="100%" height="100%">
+
+				<s:Label fontStyle="italic" textAlpha=".5" color="#FFFFFF" backgroundAlpha=".5" backgroundColor="#080000" width="100%" fontSize="{ parentApplication.headerFontSize }"
+						 text="{ resourceManager.getString('localizedContent', 'SetProviderView_header') }">
+					<s:filters>
+						<s:DropShadowFilter alpha=".5" distance="3" angle="45"/>
+					</s:filters>
+				</s:Label>
+
+<!--	<s:Form backgroundAlpha="0" width="100%" id="form">
+		<s:layout> -->
+			<!-- bizarrement, il faut mettre -10 comme paddingTop pour être à 0, constaté en 160dpi -->
+<!--			<s:FormLayout gap="0" paddingLeft="-10" paddingRight="-10" paddingTop="-10" paddingBottom="-10"/>
+		</s:layout> -->
+
+		<s:Label width="100%" fontSize="{ parentApplication.labelFontSize }"
+				 text="{ resourceManager.getString('localizedContent', 'SetProviderView_provider') }"/>
+		<s:Label width="100%" fontSize="{ parentApplication.smallLabelFontSize }"
+				 text="{ resourceManager.getString('localizedContent', 'SetProviderView_provider_small') }"/>
+
+		<s:SpinnerListContainer id="spinnerContainer" width="100%"
+								skinClass="spark.skins.mobile.SpinnerListContainerSkin">
+			<s:SpinnerList id="spinnerList" width="100%" wrapElements="false" dataProvider="{ getMailProvider() }"
+						   fontSize="{ parentApplication.labelFontSize }"> <!-- labelField="name" --> <!-- dataProvider="{ mailProvider }" -->
+				<s:itemRenderer>
+					<fx:Component>
+						<s:IconItemRenderer width="100%" labelField="name" iconField="icon"/>
+					</fx:Component>
+				</s:itemRenderer>           
+
+			</s:SpinnerList>
+		</s:SpinnerListContainer>
+
+		<!--		<s:FormHeading width="100%" label="{ resourceManager.getString('localizedContent', 'Preferences') }" textAlign="center"/> -->
+
+		<s:Rect height="4"/>
+		<s:Line width="100%">
+			<s:stroke><s:SolidColorStroke color="0x000000" weight="1" joints="miter"/></s:stroke>
+		</s:Line>
+
+		<s:Label width="100%" fontSize="{ parentApplication.labelFontSize }"
+				 text="{ resourceManager.getString('localizedContent', 'SetProviderView_login') }"/>
+		<s:Label width="100%" fontSize="{ parentApplication.smallLabelFontSize }"
+				 text="{ resourceManager.getString('localizedContent', 'SetProviderView_login_small') }"/>
+
+				<!-- <s:FormItem
+			backgroundAlpha=".5"
+			width="100%" label="{ resourceManager.getString('localizedContent', 'login') }" textAlign="right"> -->
+
+			<s:TextInput id="login" focusIn="{ focus_component = 'login' }"
+						 enter="stage.focus = null; password.setFocus()" 
+						 right="0" width="100%" text="{ parentApplication.persistenceManager.getProperty('provider_login') }"
+				skinClass="spark.skins.mobile.TextInputSkin" contentBackgroundAlpha=".8"/>
+				<!-- pb affichage avec claviers spéciaux -->
+			<!-- <s:TextInput softKeyboardType="email" id="login" right="0" width="100%" text="{ parentApplication.persistenceManager.getProperty('provider_login') }"
+						 skinClass="spark.skins.mobile.StageTextInputSkin"/> -->
+
+			<!--		</s:FormItem> -->
+
+				<s:Rect height="4"/>
+				<s:Line width="100%">
+					<s:stroke><s:SolidColorStroke color="0x000000" weight="1" joints="miter"/></s:stroke>
+				</s:Line>
+				
+				<s:Label width="100%" fontSize="{ parentApplication.labelFontSize }"
+						 text="{ resourceManager.getString('localizedContent', 'SetProviderView_password') }"/>
+				<s:Label width="100%" fontSize="{ parentApplication.smallLabelFontSize }"
+						 text="{ resourceManager.getString('localizedContent', 'SetProviderView_password_small') }"/>
+				<!--		<s:FormItem width="100%" label="{ resourceManager.getString('localizedContent', 'password') }" textAlign="right"> -->
+				<s:TextInput id="password" focusIn="{ focus_component = 'password' }"
+							 enter="stage.focus = null; password2.setFocus()"
+							 displayAsPassword="true" right="0" width="100%"
+							 skinClass="spark.skins.mobile.TextInputSkin" contentBackgroundAlpha=".8"/>
+				<!--		</s:FormItem> -->
+				
+				<s:Rect height="4"/>
+				<s:Line width="100%">
+					<s:stroke><s:SolidColorStroke color="0x000000" weight="1" joints="miter"/></s:stroke>
+				</s:Line>
+				
+				<s:Label width="100%" fontSize="{ parentApplication.labelFontSize }"
+						 text="{ resourceManager.getString('localizedContent', 'SetProviderView_password2') }"/>
+				<s:TextInput id="password2" focusIn="{ focus_component = 'password2' }"
+							 enter="stage.focus = null; button.setFocus()"
+							 displayAsPassword="true" right="0" width="100%"
+							 skinClass="spark.skins.mobile.TextInputSkin" contentBackgroundAlpha=".8"/>
+				
+				<s:Rect height="4"/>
+				<s:Line width="100%">
+					<s:stroke><s:SolidColorStroke color="0x000000" weight="1" joints="miter"/></s:stroke>
+				</s:Line>
+				
+				<s:Label width="100%" fontSize="{ parentApplication.labelFontSize }"
+						 text="{ resourceManager.getString('localizedContent', 'SetProviderView_button_text') }"/>
+				<s:Label width="100%" fontSize="{ parentApplication.smallLabelFontSize }"
+						 text="{ resourceManager.getString('localizedContent', 'SetProviderView_button_text_small') }"/>
+
+<!--		<s:FormItem width="100%" textAlign="right"> -->
+			<s:Button id="button" width="100%" fontSize="{ parentApplication.buttonFontSize }"
+					  label="{ resourceManager.getString('localizedContent', 'SetProviderView_button') }"
+					  click="button_clickHandler(event)">
+				<s:filters>
+					<s:DropShadowFilter alpha=".5" distance="3" angle="45"/>
+				</s:filters>
+			</s:Button>
+
+			<s:VGroup width="100%" horizontalAlign="center">
+				<s:BusyIndicator id="busy" visible="false" enabled="true" includeInLayout="false" horizontalCenter="true"
+								 rotationInterval="200" symbolColor="blue"/>
+			</s:VGroup>
+<!--		</s:FormItem> -->
+
+		<s:Line id="line" visible="false" includeInLayout="false" width="100%">
+			<s:stroke><s:SolidColorStroke color="0x000000" weight="1" joints="miter"/></s:stroke>
+		</s:Line>
+		<s:Label id="errorLabel" visible="false" width="100%" color="#CE0000" includeInLayout="false"
+				 paddingBottom="10" paddingTop="10"
+				 text="{ resourceManager.getString('localizedContent', 'SetProviderView_error') }"
+				 textAlign="center"/>
+<!--	</s:Form> -->
+
+			</s:VGroup>
+		</s:Scroller>
+	</s:SkinnableContainer>
+
+</s:View>

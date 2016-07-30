@@ -1,0 +1,17 @@
+
+cat ../src/Main.as | fgrep -v // |  grep Embed | sed 's/.*\///'| sed 's/png.*/png/'
+
+33/44/66/88/132/176
+19/25/37/50/75/100
+20/27/40/53/80/107
+200/267/400/533/800/1067
+
+for i in *-320dpi.png
+do
+  file $i | sed 's/.*data, \([0-9]*\) x \([0-9]*\).*/\1/' | read w
+  for j in 120 480 640
+  do
+    convert -resize $((j*w/320)) $i ${i%320dpi.png}${j}dpi.png
+  done
+done
+

@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Graphic version="2.0" viewHeight="841.89" viewWidth="595.28" ai:appVersion="15.1.0.39" ATE:version="1.0.0" flm:version="1.0.0" d:using="" xmlns="http://ns.adobe.com/fxg/2008" xmlns:ATE="http://ns.adobe.com/ate/2009" xmlns:ai="http://ns.adobe.com/ai/2009" xmlns:d="http://ns.adobe.com/fxg/2008/dt" xmlns:flm="http://ns.adobe.com/flame/2008">
+  <Library/>
+  <Group ai:seqID="1" d:layerType="page" d:pageHeight="841.89" d:pageWidth="595.28" d:type="layer" d:userLabel="Artboard 1">
+    <Group ai:seqID="2" d:type="layer" d:userLabel="Layer 1">
+      <Group x="207" y="361.25" ai:seqID="3" flm:knockout="false">
+        <Rect width="166.5" height="92.75" ai:seqID="4">
+          <fill>
+            <LinearGradient x="204.029" y="46.3745" scaleX="250.916" rotation="180">
+              <GradientEntry ratio="0.005618" color="#7DA6CA"/>
+              <GradientEntry ratio="0.073034" color="#355B7B"/>
+              <GradientEntry ratio="0.5" color="#E1E3E7"/>
+              <GradientEntry ratio="0.617977" color="#BBCCD9"/>
+              <GradientEntry ratio="0.665915" color="#B7CAD8"/>
+              <GradientEntry ratio="0.713668" color="#ABC2D5"/>
+              <GradientEntry ratio="0.761355" color="#96B6D0"/>
+              <GradientEntry ratio="0.808989" color="#7AA5C9"/>
+              <GradientEntry ratio="1" color="#105460"/>
+            </LinearGradient>
+          </fill>
+        </Rect>
+        <Rect x="9" y="9" width="148.5" height="74.75" ai:seqID="5">
+          <fill>
+            <LinearGradient x="74.2495" y="-11.6982" scaleX="99.5153" rotation="90">
+              <GradientEntry ratio="0.005618" color="#7DA6CA"/>
+              <GradientEntry ratio="0.073034" color="#355B7B"/>
+              <GradientEntry ratio="0.5" color="#E1E3E7"/>
+              <GradientEntry ratio="0.617977" color="#BBCCD9"/>
+              <GradientEntry ratio="0.665915" color="#B7CAD8"/>
+              <GradientEntry ratio="0.713668" color="#ABC2D5"/>
+              <GradientEntry ratio="0.761355" color="#96B6D0"/>
+              <GradientEntry ratio="0.808989" color="#7AA5C9"/>
+              <GradientEntry ratio="1" color="#105460"/>
+            </LinearGradient>
+          </fill>
+        </Rect>
+        <Rect x="14" y="14" width="138.5" height="64.75" ai:seqID="6">
+          <fill>
+            <SolidColor/>
+          </fill>
+        </Rect>
+        <Rect x="15" y="15" width="136.5" height="62.75" ai:seqID="7">
+          <fill>
+            <RadialGradient x="69.4648" y="-16.2397" scaleX="241.015" scaleY="241.015">
+              <GradientEntry ratio="0" color="#FFFFFF"/>
+              <GradientEntry ratio="0.0788444" color="#C7DFEF"/>
+              <GradientEntry ratio="0.15493" color="#9EC8E3"/>
+              <GradientEntry ratio="0.227695" color="#83B9DC"/>
+              <GradientEntry ratio="0.292135" color="#79B3D9"/>
+              <GradientEntry ratio="0.646067" color="#0069B0"/>
+              <GradientEntry ratio="1" color="#051B30"/>
+            </RadialGradient>
+          </fill>
+        </Rect>
+        <Rect x="18" y="18" width="130.5" height="56.75" ai:seqID="8">
+          <fill>
+            <RadialGradient x="68.6953" y="71.5332" scaleX="279.228" scaleY="279.228">
+              <GradientEntry ratio="0" color="#BCD9E7"/>
+              <GradientEntry ratio="0.0788444" color="#6EC0E0"/>
+              <GradientEntry ratio="0.15493" color="#34ADDB"/>
+              <GradientEntry ratio="0.227695" color="#0EA2D8"/>
+              <GradientEntry ratio="0.292135" color="#009DD7"/>
+              <GradientEntry ratio="0.646067" color="#007299"/>
+              <GradientEntry ratio="1" color="#2C2C5B"/>
+            </RadialGradient>
+          </fill>
+        </Rect>
+      </Group>
+    </Group>
+  </Group>
+  <Private/>
+</Graphic>

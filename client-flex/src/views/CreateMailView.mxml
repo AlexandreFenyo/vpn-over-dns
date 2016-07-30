@@ -1,0 +1,206 @@
+<!-- (c) Alexandre Fenyo 2012, 2013, 2014, 2015, 2016 - alex@fenyo.net - http://fenyo.net - GPLv3 licensed -->
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009"
+		xmlns:s="library://ns.adobe.com/flex/spark"
+		creationComplete="createMailView_creationCompleteHandler(event)"
+		viewDeactivate="createMailView_deactivateHandler(event)"
+		viewActivate="createMailView_viewActivateHandler(event)">
+	
+	<fx:Declarations>
+		<!-- Placer ici les éléments non visuels (services et objets de valeur, par exemple). -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+			import mx.core.*;
+			import mx.events.*;
+			
+			import net.fenyo.mail4hotspot.service.*;
+			import net.fenyo.mail4hotspot.tools.*;
+			
+			import spark.components.ViewNavigator;
+			import spark.events.IndexChangeEvent;
+			import spark.events.ViewNavigatorEvent;
+			import spark.managers.*;
+
+			public static var field_pre_to : String = "";
+			public static var field_pre_subject : String = "";
+			public static var field_pre_content : String = "";
+
+			private var focus_component : String = "";
+			
+			private function createMailView_creationCompleteHandler(event:FlexEvent) : void {
+				to.text = field_pre_to;
+				subject.text = field_pre_subject;
+				if (field_pre_content.length > 1000)
+					message.text = "\n-----\n" + field_pre_content.substr(0, 1000) + " [...]\n";
+				else if (field_pre_content.length > 0)  message.text = "\n-----\n" + field_pre_content;
+				field_pre_to = "";
+				field_pre_subject = "";
+				field_pre_content = "";
+
+				text_mail.source = Main.TextMail640;
+				text_mail.scaleX = text_mail.scaleY = text_mail.scaleZ = parentApplication.applicationDPI / 640;
+			}
+
+			private function setErrorPosition(event : Event) : void {
+				if (errorLabel.y + errorLabel.height > scrollgroup.height)
+					scrollgroup.verticalScrollPosition = errorLabel.y + errorLabel.height - scrollgroup.height;
+			}
+			
+			private function displayError(errorString:String):void {
+				errorLabel.text = resourceManager.getString('localizedContent', errorString);
+				line.visible = true;
+				line.includeInLayout = true;
+				errorLabel.visible = true;
+				errorLabel.includeInLayout = true;
+				button.visible = true;
+				button.includeInLayout = true;
+				busy.visible = false;
+				busy.includeInLayout = false;
+				
+				setErrorPosition(null);
+			}
+
+			protected function button_clickHandler(event:MouseEvent) : void {
+				if (to.text.length == 0) {
+					displayError('CreateMailView_to_empty_error');
+				} else {
+					var mail : MailItem = new MailItem(
+						parentApplication.persistenceManager.getProperty("provider_email"), // from
+						to.text, // to
+						copy.text, // cc
+						"VPN-over-DNS", // message_id
+						subject.text, // subject
+						new Date().toString(), // sent_date
+						new Date().toString(), // received_date
+						message.text,  // content
+						false // unread
+					);
+					parentApplication.mailsDataProvider.addItem(mail);
+					parentApplication.persistenceManager.setProperty("mailsDataProvider", parentApplication.mailsDataProvider.list);
+					parentApplication.persistenceManager.save();
+					navigator.popToFirstView();
+				}
+			}
+
+			protected function createMailView_viewActivateHandler(event:ViewNavigatorEvent):void {
+				stage.addEventListener(KeyboardEvent.KEY_DOWN, onKeyDown);
+			}
+			
+			protected function createMailView_deactivateHandler(event:Event):void {
+				stage.removeEventListener(KeyboardEvent.KEY_DOWN, onKeyDown);
+			}
+			
+			protected function onKeyDown(event:KeyboardEvent):void {
+				if (event.keyCode == 10) {
+					event.preventDefault();
+					const comp : String = focus_component;
+					if (comp == "to") copy.setFocus();
+					if (comp == "copy") subject.setFocus();
+					if (comp == "subject") message.setFocus();
+					if (comp == "message") {
+						button.setFocus();
+						stage.focus = null;
+					}
+				}
+
+				if (event.keyCode == Keyboard.BACK) {
+					event.preventDefault();
+					navigator.popToFirstView();
+				} 
+				else if (event.keyCode == Keyboard.MENU) {} 
+				else if (event.keyCode == Keyboard.SEARCH) {}
+			}
+
+		]]>
+	</fx:Script>
+
+	<s:layout>
+		<s:VerticalLayout paddingTop="0" paddingBottom="0" paddingLeft="0" paddingRight="0" gap="2" 
+						  horizontalAlign="center" verticalAlign="top"/>
+	</s:layout>
+	
+	<s:navigationContent>
+		<s:Button id="back" click="navigator.popToFirstView()" alpha=".8" styleName="back"/>
+	</s:navigationContent>
+	
+	<s:titleContent>
+		<s:HGroup width="100%" height="100%" horizontalAlign="center" verticalAlign="middle" gap="0">
+			<s:BitmapImage id="text_mail" alpha="{ Main.new_skin ? 1 : .4 }" fillMode="clip"/>
+		</s:HGroup>
+	</s:titleContent>
+	
+	<s:SkinnableContainer width="100%" height="100%" skinClass="net.fenyo.mail4hotspot.gui.MobileSkinnableContainerSkin">
+		<s:Scroller left="5" right="5" top="5" bottom="5" width="100%" height="100%">
+			
+			<s:VGroup id="scrollgroup" paddingLeft="5" paddingRight="5" paddingTop="5" paddingBottom="5" width="100%" height="100%">
+				
+				<s:Label fontStyle="italic" textAlpha=".5" color="#FFFFFF" backgroundAlpha=".5" backgroundColor="#080000" width="100%" fontSize="{ parentApplication.headerFontSize }"
+						 text="{ resourceManager.getString('localizedContent', 'CreateMailView_attach_header') }">
+					<s:filters>
+						<s:DropShadowFilter alpha=".5" distance="3" angle="45"/>
+					</s:filters>
+				</s:Label>
+				
+				<s:Label width="100%" fontSize="{ parentApplication.labelFontSize }"
+						 text="{ resourceManager.getString('localizedContent', 'CreateMailView_recipients') }"/>
+				<s:Label width="100%" fontSize="{ parentApplication.smallLabelFontSize }"
+						 text="{ resourceManager.getString('localizedContent', 'CreateMailView_recipients_small') }"/>
+				
+				<s:TextInput id="to" focusIn="{ focus_component = 'to' }"
+							 enter="stage.focus = null; copy.setFocus()"
+							 width="100%" textAlign="left" skinClass="spark.skins.mobile.TextInputSkin" contentBackgroundAlpha=".8"/>
+				
+				<s:Label width="100%" fontSize="{ parentApplication.labelFontSize }"
+						 text="{ resourceManager.getString('localizedContent', 'CreateMailView_copy') }"/>
+				<s:Label width="100%" fontSize="{ parentApplication.smallLabelFontSize }"
+						 text="{ resourceManager.getString('localizedContent', 'CreateMailView_copy_small') }"/>
+				
+				<s:TextInput id="copy" focusIn="{ focus_component = 'copy' }"
+							 enter="stage.focus = null; subject.setFocus()"
+							 width="100%" textAlign="left" skinClass="spark.skins.mobile.TextInputSkin" contentBackgroundAlpha=".8"/>
+				
+				<s:Label width="100%" fontSize="{ parentApplication.labelFontSize }"
+						 text="{ resourceManager.getString('localizedContent', 'CreateMailView_subject') }"/>
+				
+				<s:TextInput id="subject" focusIn="{ focus_component = 'subject' }"
+							 enter="stage.focus = null; message.setFocus()"
+							 textAlign="left" width="100%" skinClass="spark.skins.mobile.TextInputSkin" contentBackgroundAlpha=".8"/>
+				
+				<s:Label width="100%" fontSize="{ parentApplication.labelFontSize }"
+						 text="{ resourceManager.getString('localizedContent', 'CreateMailView_content') }"/>
+				
+				<!-- http://help.adobe.com/en_US/flex/using/WS02f7d8d4857b1677-165a04e1126951a2d98-7fd3.html -->
+				<s:TextArea id="message"
+							 textAlign="left" width="100%" skinClass="spark.skins.mobile.TextAreaSkin"
+							 height="400"/>
+				<!-- enter="stage.focus = null; button.setFocus()" -->
+
+				<s:Button id="button" width="100%"
+						  label="{ resourceManager.getString('localizedContent', 'CreateMailView_attach_button') }"
+						  click="button_clickHandler(event)">
+					<s:filters>
+						<s:DropShadowFilter alpha=".5" distance="3" angle="45"/>
+					</s:filters>
+				</s:Button>
+				
+				<s:VGroup width="100%" horizontalAlign="center">
+					<s:BusyIndicator id="busy" visible="false" enabled="true" includeInLayout="false"
+									 rotationInterval="200" symbolColor="blue"/>
+				</s:VGroup>
+				
+				<s:Rect height="4"/>
+				<s:Line id="line" visible="false" includeInLayout="false" width="100%">
+					<s:stroke><s:SolidColorStroke color="0x000000" weight="1" joints="miter"/></s:stroke>
+				</s:Line>
+				<s:Label id="errorLabel" visible="false" width="100%" color="#CE0000" includeInLayout="false"
+						 text="{ resourceManager.getString('localizedContent', 'CreateMailView_error') }"
+						 textAlign="center"/>
+				
+			</s:VGroup>
+		</s:Scroller>
+	</s:SkinnableContainer>
+	
+</s:View>

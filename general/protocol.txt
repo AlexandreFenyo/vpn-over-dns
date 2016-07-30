@@ -1,0 +1,123 @@
+﻿
+couches :
+- récupération d'un message id unique
+- tests de taille max
+- transport
+
+-------------------------------
+
+Requêtes :
+REQTYPE.v0.mail4hotspot.fenyo.net
+
+récupérer nombre de mails dispo
+
+récupérer mail (service=mail) 1 du compte 18
+
+account = 18
+secret = foExX
+service = getmail
+
+.svc-getmail.sec-foExX.acc-18.mail4hotspot.fenyo.net
+
+-------------
+
+requête :
+
+avec msgid :
+.MSGID.v0.mail4hotspot.fenyo.net
+
+-------------
+
+tests de taille max :
+
+aX.rn-RRRRRRRR.v0.mail4hotspot.fenyo.net
+a pour in A
+a suivi du nombre de A demandés, entre 1 et 26 : A pour 1 et Z pour 26
+
+rfc1035 :
+labels          63 octets or less
+names           255 octets or less
+UDP messages    512 octets or less
+
+Name servers and resolvers must
+compare labels in a case-insensitive manner (i.e., A=a), assuming ASCII
+with zero parity.  Non-alphabetic codes must match exactly.
+
+-------------
+
+demander un ticket pour un numéro de message unique de CCCCCCCC caractères :
+sz-CCCCCCCC.rn-RRRRRRRR.id-00000001.v0.mail4hotspot.fenyo.net
+rn pour random - RRRRRRRR est un identifiant aléatoire pour le cas où un cache ne respectant pas le cache de 0 indiqué dans toutes les réponses serait dans la chaîne de liaison
+sz pour size
+CCCCCCCC entre 00000000 et 99999999
+réponse : 
+1 IP de 3 octets : 0.X.Y.Z
+XYZ forment un nombre sur 2^24 bits donc inclus dans [0, 16777215]
+on les écrit toujours avec 2 lettres, un tiret et 8 les chiffres : id-00000000
+
+les mgids de 0 à 255 sont réservés
+- id-00000000 pour les requêtes à ignorer (ping)
+- id-00000001 pour les requetes getmsgid
+
+--------------
+ping :
+{n'importe quoi}.id-00000000.v0.mail4hotspot.fenyo.net
+
+or la demande des octets d'une réponse est ck-RRRRRRRR.id-IIIIIIII.v0.mail4hotspot.fenyo.net
+donc pour tester la taille max, faire cn-NNNNNNNN.id-00000000.v0.mail4hotspot.fenyo.net (cn pour counter)
+avec NNNNNNNN un nombre de réponses / ex: 00000005
+S'il est en cache, pas de pb, puisque son résultat est toujours le même
+
+ex : dig @fenyo.net. cn-00000192.id-00000000.v0.mail4hotspot.fenyo.net. a
+
+--------------
+
+envoyer des données d'un message :
+la réponse est l'acquitement de réception
+lorsque tous les acquitements ont été reçus, le message a été envoyé
+bf-OOOOOOOO.wr-PPPPPPPP.id-IIIIIIII.v0.mail4hotspot.fenyo.net
+wr pour write
+PPPPPPPP : position
+bf pour buffer
+OOOOOOOO : données en hexa, de taille indéterminée, supérieure stricte à 0.
+
+---------------
+
+attendre le traitement du message, c'est à dire une réponse présente :
+ck-RRRRRRRR.id-IIIIIIII.v0.mail4hotspot.fenyo.net
+ck pour check
+
+RRRRRRRR est un identifiant aléatoire pour le cas où un cache ne respectant pas le cache de 0 indiqué dans toutes les réponses serait dans la chaîne de liaison
+c'est utile car on va faire potentiellement plusieurs appels à ce même RR et on attend des réponses potentiellement distinctes
+
+la réponse est soit un code d'erreur (octet de poids fort non nul) :
+X.0.0.0
+soit la taille du message (octet de poids fort nul) :
+0.X.Y.Z X.Y.Z étant la taille du message de retour
+
+----------------
+
+recevoir les réponses d'un message :
+ln-XXX.rd-PPPPPPPP.id-IIIIIIII.v0.mail4hotspot.fenyo.net
+rd pour read
+PPPPPPPP : position
+a pour in A
+a suivi du nombre d'octets demandés : XXX vaut 001 à 192
+
+les IN A dans la réponse sont comme suit :
+X.Y.Z.T : Y est le 1er car, Z le second, etc.
+les 6 bits de poids faible de X valent de 0 à 63 donc 64 réponses max par datagram (i.e. 192 bytes max)
+Les deux bits de poids fort de X valent le nombre d'octets valides dans X.Y.Z.T
+
+----------------
+
+acquiter la réception d'un message :
+ac.id-IIIIIIII.v0.mail4hotspot.fenyo.net
+la réponse est l'acquittement du serveur
+ac pour acquittement (acknowledge)
+
+----------------------
+----------------------
+
+
+

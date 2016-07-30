@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- <Configuration status="INFO" monitorInterval="5"> -->
+<Configuration status="INFO">
+	
+	<Appenders>
+		<Console name="Console" target="SYSTEM_OUT">
+<!-- <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/> -->
+<!-- for debugging -->
+		<PatternLayout pattern="vpnoverdnslog: %d [%t] %p - %F:%L - %m%n"/>
+
+<!-- for fast debugging : no line number -->
+<!-- 		<PatternLayout pattern="%d [%t] %p - %F - %m%n"/> -->
+		</Console>
+    </Appenders>
+      
+	<Loggers>
+	
+	<!--
+	available levels: http://logging.apache.org/log4j/2.x/manual/customloglevels.html
+	OFF, FATAL, ERROR, WARN, INFO, DEBUG, TRACE, ALL
+	 -->
+        <Root level="info">
+			<AppenderRef ref="Console"/>
+        </Root>
+        
+         <Logger name="net.fenyo" level="all" additivity="false">
+			<AppenderRef ref="Console"/>
+    	</Logger>
+
+<!--         <Logger name="net.fenyo" level="info" additivity="false">
+			<AppenderRef ref="Console"/>
+    	</Logger>
+ -->
+
+<!--
+		<Logger name="org.hibernate" level="trace" additivity="false">
+			<AppenderRef ref="Console"/>
+    	</Logger>
+ -->    	
+	</Loggers>
+
+</Configuration>
+
+<!-- pour loguer les exceptions, implémenter ceci: 
+public class StdOutErrLog {
+
+private static final Logger logger = Logger.getLogger(StdOutErrLog.class);
+
+public static void tieSystemOutAndErrToLog() {
+    System.setOut(createLoggingProxy(System.out));
+    System.setErr(createLoggingProxy(System.err));
+}
+
+public static PrintStream createLoggingProxy(final PrintStream realPrintStream) {
+    return new PrintStream(realPrintStream) {
+        public void print(final String string) {
+            logger.info(string);
+        }
+        public void println(final String string) {
+            logger.info(string);
+        }
+    };
+}
+}
+
+Call this in your code
+
+StdOutErrLog.tieSystemOutAndErrToLog(); -->

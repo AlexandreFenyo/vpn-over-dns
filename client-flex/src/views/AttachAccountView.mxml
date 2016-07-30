@@ -1,0 +1,453 @@
+<!-- (c) Alexandre Fenyo 2012, 2013, 2014, 2015, 2016 - alex@fenyo.net - http://fenyo.net - GPLv3 licensed -->
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009"
+		xmlns:s="library://ns.adobe.com/flex/spark"
+		xmlns:mx="library://ns.adobe.com/flex/mx"
+		xmlns:jeeserver="net.fenyo.mail4hotspot.dataservices.jeeserver.*"
+		creationComplete="attachAccountView_creationCompleteHandler(event)"
+		viewDeactivate="attachAccountView_deactivateHandler(event)"
+		viewActivate="attachAccountView_viewActivateHandler(event)">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.air.sampleextensions.android.licensing.*;
+			
+			import flash.net.dns.*;
+			
+			import flashx.textLayout.formats.VerticalAlign;
+			
+			import mx.core.FlexGlobals;
+			import mx.events.*;
+			import mx.managers.*;
+			import mx.resources.ResourceManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.URLUtil;
+			
+			import net.fenyo.extension.Ssl;
+			import net.fenyo.mail4hotspot.gui.*;
+			import net.fenyo.mail4hotspot.tools.GenericTools;
+			
+			import spark.components.ViewNavigator;
+			import spark.events.ViewNavigatorEvent;
+	
+			private var lc : LicenseChecker;
+
+			private var saved_statusCode : String;
+			private var saved_provider : String;
+			private var saved_provider_email : String;
+			private var saved_provider_login : String;
+			private var saved_uuid : String;
+
+			private static const ssl : Ssl = new Ssl();
+
+			private var focus_component : String = "";
+			
+			private function attachAccountView_creationCompleteHandler(event:FlexEvent) : void {
+				// il faudrait les supprimer quand la vue n'est plus utilisée
+				errorLabel.addEventListener(Event.RESIZE, setErrorPosition);
+				errorLabel.addEventListener(mx.events.MoveEvent.MOVE, setErrorPosition);
+
+				if (parentApplication.persistenceManager.getProperty('login') != null)
+					login.text = parentApplication.persistenceManager.getProperty('login');
+
+				if (resourceManager.localeChain[0].toString().substr(0, 2) == "fr") text_connecter.source = Main.TextConnecter640;
+				else text_connecter.source = Main.TextLogin640;
+				text_connecter.scaleX = text_connecter.scaleY = text_connecter.scaleZ = parentApplication.applicationDPI / 640;
+			}
+
+			private function setErrorPosition(event : Event) : void {
+				if (errorLabel.y + errorLabel.height > scrollgroup.height)
+					scrollgroup.verticalScrollPosition = errorLabel.y + errorLabel.height - scrollgroup.height;
+			}
+
+			private function displayError(errorString:String):void {
+				errorLabel.text = resourceManager.getString('localizedContent', errorString);
+				line.visible = true;
+				line.includeInLayout = true;
+				errorLabel.visible = true;
+				errorLabel.includeInLayout = true;
+				button.visible = true;
+				button.includeInLayout = true;
+				busy.visible = false;
+				busy.includeInLayout = false;
+
+				setErrorPosition(null);
+			}
+			
+			private function displayBusy():void {
+				line.visible = false;
+				line.includeInLayout = false;
+				errorLabel.visible = false;
+				errorLabel.includeInLayout = false;
+				button.visible = false;
+				button.includeInLayout = false;
+				busy.visible = true;
+				busy.includeInLayout = true;
+			}
+			
+			protected function button_clickHandler(event:MouseEvent) : void {
+				var pattern:RegExp = /^[a-zA-Z0-9]{6,}$/;
+				if (pattern.test(login.text) == false) {
+					displayError('AttachAccountView_loginInputError');
+				} else if (pattern.test(password.text) == false) {
+					displayError('AttachAccountView_passwordInputError');
+				} else {
+					back.enabled = false;
+					login.enabled = false;
+					password.enabled = false;
+
+					displayBusy();
+
+					if (!DNSResolver.isSupported) {
+
+						ssl.addEventListener(StatusEvent.STATUS, onStatus);
+						// pour voir ce qu'il se passe après un timeout : utiliser l'URL https://1.2.3.4/ au lieu de https://www.fenyo.fr/mail4hotspot/app/mobile-get-user
+						ssl.get('https://www.vpnoverdns.com/mail4hotspot/app/mobile-get-user',
+							'username=' + escape(login.text) + '&password=' + escape(password.text) + '&info=' + escape(Main.getReleaseInfos()),
+							10000);
+
+					} else {
+
+						 // via le binding de Flex (ne fonctionne pas avec SSL et Android, mais c'est peut être dû au fait que mon serveur activait SNI et que le client était ICS donc avec le bug correspondant)
+						 // à garder pour Windows et IOS
+						 AttachUserResult.addEventListener(ResultEvent.RESULT, attachAccountView_actionHandler);
+						 AttachUserResult.addEventListener(FaultEvent.FAULT, attachAccountView_errorHandler); 
+						 AttachUserResult.token = jeeserver.MobileGetUser(login.text, password.text, Main.getReleaseInfos());
+
+					}
+				}
+			}
+
+			// Android
+			private function onStatus(event : StatusEvent) : void {
+				ssl.removeEventListener(StatusEvent.STATUS, onStatus);
+
+				// event.code: ERROR or OK
+				// event.level: <results><statusCode>1</statusCode><statusString>invalid password</statusString><provider></provider><email></email><login></login><uuid></uuid></results>
+				// trace('AttachAccountView.onStatus(): event.code=' + event.code);
+				// trace('AttachAccountView.onStatus(): event.level=' + event.level);
+
+				if (event.code != "OK") attachAccountView_errorHandler(event);
+				else {
+					var s : String =
+						"email=" + GenericTools.getXMLField(event.level, "email") +
+						";login=" + GenericTools.getXMLField(event.level, "login");
+					var o : Object = URLUtil.stringToObject(s, ";", true);
+					
+					attachAccountView_action(
+						GenericTools.getXMLField(event.level, "statusCode"),
+						GenericTools.getXMLField(event.level, "provider"),
+						o.email,
+						o.login,
+						GenericTools.getXMLField(event.level, "uuid")
+						);
+				}
+			}
+
+			// le type réel de event dépend de l'appelant (différent sous Android et sous Windows)
+			private function attachAccountView_errorHandler(event:Event):void {
+				back.enabled = true;
+				login.enabled = true;
+				password.enabled = true;
+
+				// trace(login.text + " - " + parentApplication.persistenceManager.getProperty("login") + " - " +
+				//	password.text + " - " + parentApplication.persistenceManager.getProperty("password"));
+
+				if (login.text == parentApplication.persistenceManager.getProperty("login") &&
+					password.text == parentApplication.persistenceManager.getProperty("password")) {
+
+					// trace("AttachAccountView.attachAccountView_errorHandler(): utilisation du cache du login/password");
+					
+					line.visible = false;
+					line.includeInLayout = false;
+					errorLabel.visible = false;
+					errorLabel.includeInLayout = false;
+					button.visible = true;
+					button.includeInLayout = true;
+					busy.visible = false;
+					busy.includeInLayout = false;
+					parentApplication.viewnavigator_login.popToFirstView();
+					parentApplication.viewnavigator_login.visible = false;
+					if (!Main.tablet) {
+						parentApplication.viewnavigator_main.visible = true;
+					} else {
+						parentApplication.tablet_splitviewnavigator.visible = true;
+					}
+
+					parentApplication.persistenceManager.setProperty("loggedIn", "true");
+					parentApplication.persistenceManager.save();
+
+					password.text = "";
+					
+					var popUp : PopUpAttach = new PopUpAttach();
+					popUp.open(this, true);
+					popUp.label.width = width * 2 / 3;
+					PopUpManager.centerPopUp(popUp);
+					
+					if (!Main.tablet) {
+						if (parentApplication.view_config.activeView != null)
+							parentApplication.view_config.activeView.label.text =
+								resourceManager.getString('localizedContent', 'ConfigurationView_account') + ' ' + parentApplication.persistenceManager.getProperty('login');
+					} else {
+						if (parentApplication.tablet_view_config.activeView != null)
+							parentApplication.tablet_view_config.activeView.label.text =
+								resourceManager.getString('localizedContent', 'ConfigurationView_account') + ' ' + parentApplication.persistenceManager.getProperty('login');
+					}
+
+				} else displayError('AttachAccountView_error');
+			}
+
+			private function attachAccountView_actionHandler(event : Event) : void {
+				var s : String =
+					"email=" + AttachUserResult.lastResult.email +
+					";login=" + AttachUserResult.lastResult.login;
+				var o : Object = URLUtil.stringToObject(s, ";", true);
+
+				attachAccountView_action(
+					AttachUserResult.lastResult.statusCode,
+					AttachUserResult.lastResult.provider,
+					o.email,
+					o.login,
+					AttachUserResult.lastResult.uuid
+				);
+			}
+
+			private function attachAccountView_action(statusCode : String, provider : String, provider_email : String, provider_login : String, uuid : String) : void {
+				saved_statusCode = statusCode;
+				saved_provider = provider;
+				saved_provider_email = provider_email;
+				saved_provider_login = provider_login;
+				saved_uuid = uuid;
+
+				if (Main.release_info_account_type == 'PAY') {
+					lc = new LicenseChecker();
+					lc.addEventListener(ErrorEvent.ERROR, licenseErrorHandler);
+					lc.addEventListener(LicenseStatusEvent.STATUS, licenseResultHandler);
+					lc.checkLicense();
+				} else {
+					const event : LicenseStatusEvent = new LicenseStatusEvent(LicenseStatusEvent.STATUS, LicenseStatus.LICENSED, "!PAY");
+					licenseResultHandler(event);
+				}
+			}
+
+			private function licenseErrorHandler(event : ErrorEvent) : void {
+				// trace("AttachAccountView.licenseErrorHandler(): " + event.toString());
+				
+				lc.removeEventListener(ErrorEvent.ERROR, licenseErrorHandler);
+				lc.removeEventListener(LicenseStatusEvent.STATUS, licenseResultHandler);
+				
+				back.enabled = true;
+				login.enabled = true;
+				password.enabled = true;
+				
+				displayError('CreateAccountView_licenseError');
+			}
+
+			private function licenseResultHandler(event : LicenseStatusEvent) : void {
+				// trace("AttachAccountView.licenseResultHandler(): status: " + event.status + " statusReason: " + event.statusReason);
+
+				if (Main.release_info_account_type == 'PAY') {
+					lc.removeEventListener(ErrorEvent.ERROR, licenseErrorHandler);
+					lc.removeEventListener(LicenseStatusEvent.STATUS, licenseResultHandler);
+				}
+
+				back.enabled = true;
+				login.enabled = true;
+				password.enabled = true;
+
+				// on fait croire que c'est OK, afin de désactiver le système de licence
+//				if (event.status == LicenseStatus.LICENSED) {
+				if (true) {
+					switch (saved_statusCode) {
+						case '0':
+							line.visible = false;
+							line.includeInLayout = false;
+							errorLabel.visible = false;
+							errorLabel.includeInLayout = false;
+							button.visible = true;
+							button.includeInLayout = true;
+							busy.visible = false;
+							busy.includeInLayout = false;
+							parentApplication.viewnavigator_login.popToFirstView();
+							parentApplication.viewnavigator_login.visible = false;
+							if (!Main.tablet) {
+								parentApplication.viewnavigator_main.visible = true;
+							} else {
+								parentApplication.tablet_splitviewnavigator.visible = true;
+							}
+
+							if (login.text != parentApplication.persistenceManager.getProperty("login") ||
+								password.text != parentApplication.persistenceManager.getProperty("password"))
+								parentApplication.mailsDataProvider.removeAll();
+
+							parentApplication.persistenceManager.setProperty("login", login.text);
+							parentApplication.persistenceManager.setProperty("password", password.text);
+							password.text = "";
+							parentApplication.persistenceManager.setProperty("provider", saved_provider);
+							parentApplication.persistenceManager.setProperty("provider_email", saved_provider_email);
+							parentApplication.persistenceManager.setProperty("provider_login", saved_provider_login);
+							parentApplication.persistenceManager.setProperty("uuid", saved_uuid);
+							parentApplication.persistenceManager.setProperty("loggedIn", "true");
+							parentApplication.persistenceManager.save();
+							
+							var popUp : PopUpAttach = new PopUpAttach();
+							popUp.open(this, true);
+							popUp.label.width = width * 2 / 3;
+							PopUpManager.centerPopUp(popUp);
+
+							if (!Main.tablet) {
+								if (parentApplication.view_config.activeView != null)
+									parentApplication.view_config.activeView.label.text =
+										resourceManager.getString('localizedContent', 'ConfigurationView_account') + ' ' + parentApplication.persistenceManager.getProperty('login');
+							} else {
+								if (parentApplication.tablet_view_config.activeView != null)
+									parentApplication.tablet_view_config.activeView.label.text =
+										resourceManager.getString('localizedContent', 'ConfigurationView_account') + ' ' + parentApplication.persistenceManager.getProperty('login');
+							}
+							break;
+						
+						case '1':
+							displayError('AttachAccountView_serverError2');
+							break;
+						
+						case '2':
+							displayError('AttachAccountView_serverError');
+							break;
+						
+						default:
+							displayError('error');
+							break;
+					}
+				}
+				else licenseErrorHandler(new ErrorEvent(ErrorEvent.ERROR));
+			}
+
+			protected function attachAccountView_viewActivateHandler(event:ViewNavigatorEvent):void {
+				stage.addEventListener(KeyboardEvent.KEY_DOWN, onKeyDown);
+			}
+			
+			protected function attachAccountView_deactivateHandler(event:Event):void {
+				stage.removeEventListener(KeyboardEvent.KEY_DOWN, onKeyDown);
+				AttachUserResult.token = null;
+			}
+			
+			protected function onKeyDown(event:KeyboardEvent):void {
+				if (event.keyCode == 10) {
+					event.preventDefault();
+					const comp : String = focus_component;
+					if (comp == "login") password.setFocus();
+					if (comp == "password") {
+						button.setFocus();
+						stage.focus = null;
+					}
+				}
+
+				if (busy.visible == false) {
+					if (event.keyCode == Keyboard.BACK) {
+						event.preventDefault();
+						parentApplication.viewnavigator_login.popToFirstView();
+					} 
+					else if (event.keyCode == Keyboard.MENU) {} 
+					else if (event.keyCode == Keyboard.SEARCH) {}
+				}
+			}
+		]]>
+		
+	</fx:Script>
+	
+	<fx:Declarations>
+		<s:CallResponder id="AttachUserResult"/>
+		<jeeserver:Jeeserver id="jeeserver"/>
+	</fx:Declarations>
+	
+	<s:layout>
+		<s:VerticalLayout paddingTop="0" paddingBottom="0" paddingLeft="0" paddingRight="0" gap="2" 
+						  horizontalAlign="center" verticalAlign="top"/>
+	</s:layout>
+	
+	<s:navigationContent>
+		<s:Button id="back" click="navigator.popToFirstView()" alpha=".8" styleName="back"/>
+	</s:navigationContent>
+	
+	<s:titleContent>
+		<s:HGroup width="100%" height="100%" horizontalAlign="center" verticalAlign="middle" gap="0">
+			<s:BitmapImage id="text_connecter" alpha="{ Main.new_skin ? 1 : .4 }" fillMode="clip"/>
+		</s:HGroup>
+	</s:titleContent>
+
+	<s:SkinnableContainer width="100%" height="100%" skinClass="net.fenyo.mail4hotspot.gui.MobileSkinnableContainerSkin">
+		<s:Scroller left="5" right="5" top="5" bottom="5" width="100%" height="100%">
+			
+			<s:VGroup id="scrollgroup" paddingLeft="5" paddingRight="5" paddingTop="5" paddingBottom="5" width="100%" height="100%">
+				
+				<s:Label fontStyle="italic" textAlpha=".5" color="#FFFFFF" backgroundAlpha=".5" backgroundColor="#080000" width="100%" fontSize="{ parentApplication.headerFontSize }"
+						 text="{ resourceManager.getString('localizedContent', 'AttachAccountView_attach_header') }">
+					<s:filters>
+						<s:DropShadowFilter alpha=".5" distance="3" angle="45"/>
+					</s:filters>
+				</s:Label>
+				
+				<s:Label width="100%" fontSize="{ parentApplication.labelFontSize }"
+						 text="{ resourceManager.getString('localizedContent', 'AttachAccountView_attach_login') }"/>
+				<s:Label width="100%" fontSize="{ parentApplication.smallLabelFontSize }"
+						 text="{ resourceManager.getString('localizedContent', 'AttachAccountView_attach_login_small') }"/>
+				
+				<!-- <s:TextInput id="login" text="{ parentApplication.persistenceManager.getProperty('login') }" width="100%" textAlign="left"/> -->
+				<!-- cette skin doit être déclarée manuellement dans les applications mobiles :
+				http://help.adobe.com/fr_FR/flex/mobileapps/WS19f279b149e7481c6a9f451212b87fe7e87-7fff.html
+				rq: sinon, le contenu initial s'efface après affichage initial, sur mon Galaxy S2 -->
+				<s:TextInput id="login" focusIn="{ focus_component = 'login' }"
+							 enter="stage.focus = null; password.setFocus()"
+							 width="100%" textAlign="left" skinClass="spark.skins.mobile.TextInputSkin" contentBackgroundAlpha=".8"/>
+				
+				<s:Rect height="4"/>
+				<s:Line width="100%">
+					<s:stroke><s:SolidColorStroke color="0x000000" weight="1" joints="miter"/></s:stroke>
+				</s:Line>
+				
+				<s:Label width="100%" fontSize="{ parentApplication.labelFontSize }"
+						 text="{ resourceManager.getString('localizedContent', 'AttachAccountView_attach_password') }"/>
+				<s:Label width="100%" fontSize="{ parentApplication.smallLabelFontSize }"
+						 text="{ resourceManager.getString('localizedContent', 'AttachAccountView_attach_password_small') }"/>
+				
+				<!-- displayAsPassword="true" fait qu'en saisissant un premier caractère, le champ se remplit avec d'autres caractères ! -->
+				<s:TextInput id="password" focusIn="{ focus_component = 'password' }"
+							 enter="stage.focus = null; button.setFocus()"
+							 displayAsPassword="false" textAlign="left" width="100%" skinClass="spark.skins.mobile.TextInputSkin" contentBackgroundAlpha=".8"/>
+				
+				<s:Rect height="4"/>
+				<s:Line width="100%">
+					<s:stroke><s:SolidColorStroke color="0x000000" weight="1" joints="miter"/></s:stroke>
+				</s:Line>
+
+				<s:Label width="100%" fontSize="{ parentApplication.labelFontSize }"
+						 text="{ resourceManager.getString('localizedContent', 'AttachAccountView_attach_button_text') }"/>
+				<s:Label width="100%" fontSize="{ parentApplication.smallLabelFontSize }"
+						 text="{ resourceManager.getString('localizedContent', 'AttachAccountView_attach_button_small') }"/>
+				
+				<s:Button id="button" width="100%"
+						  label="{ resourceManager.getString('localizedContent', 'AttachAccountView_attach_button') }"
+						  click="button_clickHandler(event)">
+					<s:filters>
+						<s:DropShadowFilter alpha=".5" distance="3" angle="45"/>
+					</s:filters>
+				</s:Button>
+
+				<s:VGroup width="100%" horizontalAlign="center">
+					<s:BusyIndicator id="busy" visible="false" enabled="true" includeInLayout="false"
+									 rotationInterval="200" symbolColor="blue"/>
+				</s:VGroup>
+				
+				<s:Rect height="4"/>
+				<s:Line id="line" visible="false" includeInLayout="false" width="100%">
+					<s:stroke><s:SolidColorStroke color="0x000000" weight="1" joints="miter"/></s:stroke>
+				</s:Line>
+				<s:Label id="errorLabel" visible="false" width="100%" color="#CE0000" includeInLayout="false"
+						 text="{ resourceManager.getString('localizedContent', 'AttachAccountView_error') }"
+						 textAlign="center"/>
+				
+			</s:VGroup>
+		</s:Scroller>
+	</s:SkinnableContainer>
+</s:View>

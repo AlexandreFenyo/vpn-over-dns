@@ -1,0 +1,71 @@
+<!-- (c) Alexandre Fenyo 2012, 2013, 2014, 2015, 2016 - alex@fenyo.net - http://fenyo.net - GPLv3 licensed -->
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   splashScreenImage="@Embed('assets/splash11.png')"
+			   splashScreenScaleMode="none"
+			   backgroundColor="black"
+			   splashScreenMinimumDisplayTime="1000"
+			   initialize="initMail4HotSpot()"
+			   applicationComplete="applicationComplete(event)"
+			   creationComplete="creationCompleteHandler(event)">
+	
+	
+	<!-- skinClass="net.fenyo.mail4hotspot.gui.ApplicationSkin" -->
+	<!-- applicationDPI="160" -->
+	
+	<!-- les fichiers de skins sont dans :
+	/cygdrive/c/Program Files (x86)/Adobe/Adobe Flash Builder 4.6/sdks/4.6.0/frameworks/projects/mobiletheme/src/spark/skins/mobile -->
+	
+	<!--
+	initMail4HotSpot appelé au moment de preinitialize ou d'initialize et non d'applicationcomplete car sinon c'est appelé après les viewActivate ou creationComplete des vues,
+	or initMail4HotSpot construit l'objet de persistence qui est utilisé par les vues à leur initialisation.
+	L'ordre d'appel des handlers à l'initialisation est sur http://www.wietseveenstra.nl/blog/2007/02/understanding-the-flex-application-startup-event-order/ 
+	--> 
+	
+	<!-- à remettre:
+	splashScreenImage="@Embed('assets/splash.jpg')"
+	splashScreenScaleMode="zoom"
+	-->
+	
+	<fx:Metadata>
+		// http://cookbooks.adobe.com/post_How_to_obtain_current_system_locale_string_-15786.html
+		[ ResourceBundle("localizedContent") ]
+	</fx:Metadata>
+	<fx:Style source="Main.css"/>
+	
+	<fx:Script source="Main.as"/>
+	
+	<s:states>
+		<s:State name="portrait"/>
+		<s:State name="landscape"/>
+	</s:states>
+	
+	<s:ViewNavigator visible="true" id="viewnavigator_login" width="100%" height="100%" firstView="views.LoginView"/>
+	
+	<s:TabbedViewNavigator change="onTabClick(event)" id="viewnavigator_main" selectedIndex="0" visible="false" width="100%" height="100%">
+	<!-- <s:navigators/> pas obligatoire : "Note: You do not have to specify the navigators child tag in MXML because it is the default property of TabbedViewNavigator. " -->
+	<s:navigators>
+	<s:ViewNavigator id="view_status" label="{ resourceManager.getString('localizedContent', 'Status') }" width="100%" height="100%"/>
+	<s:ViewNavigator id="view_mails" label="{ resourceManager.getString('localizedContent', 'Mail') }" width="100%" height="100%"/>
+	<s:ViewNavigator id="view_browser" label="Browser" width="100%" height="100%"/>
+	<s:ViewNavigator id="view_config" label="{ resourceManager.getString('localizedContent', 'Configuration') }" width="100%" height="100%"/>
+	</s:navigators>
+	</s:TabbedViewNavigator>
+	
+	<s:SplitViewNavigator id="tablet_splitviewnavigator" width="100%" height="100%" visible="false">
+	<s:ViewNavigator width="{ tablet_leftwidth }"  id="tablet_view_status" label="{ resourceManager.getString('localizedContent', 'Status') }" height="100%"/>
+	<s:TabbedViewNavigator change="onTabClick(event)" id="tablet_viewnavigator_main" selectedIndex="0" width="100%" height="100%">
+	<s:navigators>
+	<s:ViewNavigator id="tablet_view_mails" label="{ resourceManager.getString('localizedContent', 'Mail') }" width="100%" height="100%"/>
+	<s:ViewNavigator id="tablet_view_browser" label="Browser" width="100%" height="100%"/>
+	<s:ViewNavigator id="tablet_view_config" label="{ resourceManager.getString('localizedContent', 'Configuration') }" width="100%" height="100%"/>
+	</s:navigators>
+	</s:TabbedViewNavigator>
+	</s:SplitViewNavigator>
+	<fx:Declarations>
+		<!-- Placer ici les éléments non visuels (services et objets de valeur, par exemple). -->
+	</fx:Declarations>
+	
+</s:Application>

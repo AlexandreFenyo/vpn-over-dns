@@ -1,0 +1,251 @@
+<!-- (c) Alexandre Fenyo 2012, 2013, 2014, 2015, 2016 - alex@fenyo.net - http://fenyo.net - GPLv3 licensed -->
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		xmlns:s="library://ns.adobe.com/flex/spark"
+		destructionPolicy="never"
+		creationComplete="mailView_creationCompleteHandler(event)">
+	<!-- xmlns:test="assets.*" -->
+
+	<!-- destructionPolicy="never" : ça permet de conserver l'endroit où on a scrollé, quand on revient de la lecture d'un mail -->
+	
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.ListCollectionView;
+			import mx.events.*;
+			import mx.managers.PopUpManager;
+
+			import net.fenyo.mail4hotspot.gui.*;
+			import net.fenyo.mail4hotspot.service.*;
+			
+			import spark.events.IndexChangeEvent;
+
+			private function mailView_creationCompleteHandler(event:FlexEvent) : void {
+				// Alex
+				left_screw.source = Main.PictureScrew640;
+				left_screw.scaleX = left_screw.scaleY = left_screw.scaleZ = parentApplication.applicationDPI / 640;
+				right_screw.source = Main.PictureScrew640;
+				right_screw.scaleX = right_screw.scaleY = right_screw.scaleZ = parentApplication.applicationDPI / 640;
+				text_mail.source = Main.TextMail640;
+				text_mail.scaleX = text_mail.scaleY = text_mail.scaleZ = parentApplication.applicationDPI / 640;
+
+				if (parentApplication.mailsDataProvider.length > 20) {
+					const popUp : PopUpWarnDeleteMails = new PopUpWarnDeleteMails();
+					popUp.open(this, true);
+					popUp.label.width = width * 2 / 3;
+					PopUpManager.centerPopUp(popUp);
+				}
+			}
+
+			protected function button1_clickHandler(event : MouseEvent) : void {
+				const popUp : PopUpDeleteMails = new PopUpDeleteMails();
+				popUp.open(this, true);
+				popUp.label.width = width * 2 / 3;
+				PopUpManager.centerPopUp(popUp);
+			}
+
+			protected function button2_clickHandler(event : MouseEvent) : void {
+				navigator.pushView(views.CreateMailView);
+			}
+
+			protected function myList_clickHandler(event:MouseEvent):void {
+				myList_changeHandler(null);
+			}
+
+			protected function myList_changeHandler(event:IndexChangeEvent):void {
+				// bug ici a term is undefined and has no properties.
+				if (myList.selectedItem != null) {
+					myList.selectedItem.unread = false;
+					parentApplication.mailsDataProvider.getItemAt(myList.selectedIndex).unread = false;
+					parentApplication.persistenceManager.setProperty("mailsDataProvider", parentApplication.mailsDataProvider.list);
+					parentApplication.persistenceManager.save();
+
+					navigator.pushView(views.ReceivedMailView, myList.selectedItem);
+				}
+			}
+			
+		]]>
+	</fx:Script>
+
+	<fx:Declarations>
+		<!-- Placer ici les éléments non visuels (services et objets de valeur, par exemple). -->
+	</fx:Declarations>
+
+	<s:layout>
+		<s:VerticalLayout paddingTop="0" paddingBottom="0" paddingLeft="0" paddingRight="0" gap="2" 
+						  horizontalAlign="center" verticalAlign="top"/>
+	</s:layout>
+
+	<s:titleContent>
+		<s:Graphic x="0" y="0">             
+			<s:BitmapImage id="left_screw" alpha="{ Main.new_skin ? 1 : .5 }" fillMode="clip"/>
+		</s:Graphic>
+		<s:HGroup width="100%" height="100%" horizontalAlign="center" verticalAlign="middle" gap="0">
+			<s:BitmapImage id="text_mail" alpha="{ Main.new_skin ? 1 : .4 }" fillMode="clip"/>
+		</s:HGroup>
+		<s:Graphic x="0" y="0">             
+			<s:BitmapImage id="right_screw" alpha="{ Main.new_skin ? 1 : .5 }"  fillMode="clip"/>
+		</s:Graphic>
+	</s:titleContent>
+
+<!--	<test:tst id="graphic1" x="70" y="24" width="309.28" height="436.89"/> -->
+<!-- http://help.adobe.com/fr_FR/FlashPlatform/reference/actionscript/3/spark/components/List.html?filter_flex=4.1&filter_flashplayer=10.2&filter_air=2.6 -->
+
+	<s:SkinnableContainer width="100%" height="100%" backgroundColor="{ Main.skin_bgcolor }">
+		<!-- skinClass="net.fenyo.mail4hotspot.gui.MobileSkinnableContainerSkin" -->
+
+		<s:VGroup paddingLeft="10" paddingRight="10" paddingTop="10" paddingBottom="10" width="100%" height="100%">
+
+			<s:HGroup width="100%" horizontalAlign="center">
+				<s:Button id="button_clean_mails" width="40%" label="{ resourceManager.getString('localizedContent', 'MailView_button') }" click="button1_clickHandler(event)">
+					<s:filters>
+						<s:DropShadowFilter alpha=".5" distance="3" angle="45"/>
+					</s:filters>
+				</s:Button>
+				<s:Rect width="5%"/>
+				<s:Button id="button_new_mail" width="40%" label="{ resourceManager.getString('localizedContent', 'MailView_button2') }" click="button2_clickHandler(event)">
+					<s:filters>
+						<s:DropShadowFilter alpha=".5" distance="3" angle="45"/>
+					</s:filters>
+				</s:Button>
+			</s:HGroup>
+
+<!--		<s:Button id="button" width="100%" fontSize="{ parentApplication.buttonFontSize }"
+				  label="{ resourceManager.getString('localizedContent', 'MailView_button') }"
+				  click="button1_clickHandler(event)">
+			<s:filters>
+				<s:DropShadowFilter alpha=".5" distance="3" angle="45"/>
+			</s:filters>
+		</s:Button> -->
+
+			<!-- progress bar -->
+		<s:BorderContainer borderWeight="2" width="100%" cornerRadius="10" borderColor="#B3B3B3" backgroundColor="#998675" backgroundAlpha="0" borderVisible="true">
+			<s:layout>
+				<s:VerticalLayout 
+					paddingLeft="5" paddingRight="5" 
+					paddingTop="5" paddingBottom="5" gap="2"/>
+			</s:layout>
+			<s:Label color="black" text="{ VuMeter.progress_bar_for_mails_text }" fontSize="{ parentApplication.labelFontSize }"/>
+			<s:BorderContainer id="border_container_1" height="26" backgroundAlpha="0" borderWeight="2" width="100%" borderColor="#B3B3B3">
+				
+				<s:Rect x="1" y="1" alpha="1" width="{ (border_container_1.width - 6) * VuMeter.progress_bar_for_mails_ratio / 1000 }" height="20">
+					<s:fill>
+						<s:LinearGradient x="60" y="24" scaleX="24" rotation="270">
+							<s:GradientEntry ratio="0" color="#006837"/>
+							<s:GradientEntry ratio="0.408822" color="#036A37"/>
+							<s:GradientEntry ratio="0.639392" color="#127739"/>
+							<s:GradientEntry ratio="0.741464" color="#23833A"/>
+							<s:GradientEntry ratio="0.834089" color="#39953D"/>
+							<s:GradientEntry ratio="1" color="#7AC943"/>
+						</s:LinearGradient>
+					</s:fill>
+				</s:Rect>
+				
+				<s:Rect x="1" y="1" alpha="1" width="{ border_container_1.width - 6 }" height="20">
+					<s:fill>
+						<s:LinearGradient x="219" y="24" scaleX="24" rotation="270">
+							<s:GradientEntry ratio="0" color="#808080"/>
+							<s:GradientEntry ratio="0.220582" color="#767676" alpha="0.779418"/>
+							<s:GradientEntry ratio="0.469662" color="#5D5D5D" alpha="0.530338"/>
+							<s:GradientEntry ratio="0.730109" color="#353535" alpha="0.269891"/>
+							<s:GradientEntry ratio="1" alpha="0"/>
+						</s:LinearGradient>
+					</s:fill>
+				</s:Rect>
+			</s:BorderContainer>
+		</s:BorderContainer>
+		<!-- -->
+			
+		<s:Scroller width="100%" height="100%" horizontalScrollPolicy="off">
+
+			<s:VGroup paddingLeft="0" paddingRight="0" paddingTop="0" paddingBottom="0" width="100%" height="100%">
+
+	<s:List id="myList" width="10000" height="100%" click="myList_clickHandler(event)"
+			labelField="firstName" dataProvider="{ parentApplication.mailsDataProvider }"
+			alpha="1" contentBackgroundColor="{ Main.skin_bgcolor }" contentBackgroundAlpha="1"> <!-- change="myList_changeHandler(event)"  -->
+		<!-- itemRenderer is inline in this sample -->
+		<s:itemRenderer>
+			<fx:Component>
+				<s:ItemRenderer width="100%" alpha="1" contentBackgroundColor="{ Main.skin_bgcolor }" contentBackgroundAlpha="1">
+					<fx:Script>
+						<![CDATA[
+							import mx.core.FlexGlobals;
+							
+							import net.fenyo.mail4hotspot.service.Application;
+							
+							import spark.components.NavigatorContent;
+						]]>
+					</fx:Script>
+					<s:states>
+						<s:State name="normal" />
+						<s:State name="hovered" />
+						<s:State name="selected" />
+					</s:states>
+					<s:Rect left="0" right="0" top="0" bottom="0">
+						<s:fill>
+							<s:SolidColor color="{ Main.skin_bgcolor }" alpha="1" alpha.hovered="1" alpha.selected="1" />
+						</s:fill>
+					</s:Rect>
+					<!-- le left et le right font que ça s'adapte à la largeur de la fenêtre -->
+<s:HGroup width="100%" gap="0">
+	<s:VGroup paddingTop="1" paddingBottom="0" paddingLeft="0" paddingRight="0" gap="0">
+		
+		<s:Label textAlign="right" width="100%" fontSize="{ FlexGlobals.topLevelApplication.labelFontSize }"
+				 paddingLeft="0" paddingRight="0" backgroundAlpha="1" color="#505050"
+				 text="{ (data.message_id == 'VPN-over-DNS') ? '' : resourceManager.getString('localizedContent', 'MailView_From') }" left="0" right="0" paddingTop="1" paddingBottom="0"/>
+		
+		<s:Label textAlign="right" width="100%" fontSize="{ FlexGlobals.topLevelApplication.labelFontSize }"
+				 paddingLeft="0" paddingRight="0" backgroundAlpha="1" color="#505050"
+				 text="{ resourceManager.getString('localizedContent', 'MailView_To') }" left="0" right="0" paddingTop="1" paddingBottom="0"/>
+		
+		<s:Label textAlign="right" width="100%" fontSize="{ FlexGlobals.topLevelApplication.smallLabelFontSize }"
+				 paddingLeft="0" paddingRight="0" backgroundAlpha="1" color="#505050"
+				 text="{ resourceManager.getString('localizedContent', 'MailView_Subject') }" paddingTop="1" paddingBottom="0"/>
+		
+		<s:Label textAlign="right" width="100%" fontSize="{ FlexGlobals.topLevelApplication.smallLabelFontSize }"
+				 paddingLeft="0" paddingRight="0" backgroundAlpha="1" color="#505050"
+				 text="{ resourceManager.getString('localizedContent', 'MailView_Date') }" paddingTop="1" paddingBottom="0"/>
+		
+	</s:VGroup>
+
+	<s:VGroup paddingTop="1" paddingBottom="0" paddingLeft="0" paddingRight="0" gap="0">
+		
+		<s:Label width="100%" fontSize="{ FlexGlobals.topLevelApplication.labelFontSize }"
+				 paddingLeft="0" paddingRight="0"  backgroundAlpha="1" color="black"
+				 text="{ ' ' + ((data.message_id == 'VPN-over-DNS') ? resourceManager.getString('localizedContent', 'MailView_Sent') : data.from) }" left="0" right="0" paddingTop="1" paddingBottom="0"
+				 fontWeight="{ (data.message_id == 'VPN-over-DNS') ? 'bold' : (data.unread ? 'bold' : 'normal') }"/>
+		
+		<s:Label width="100%" fontSize="{ FlexGlobals.topLevelApplication.labelFontSize }"
+				 paddingLeft="0" paddingRight="0" backgroundAlpha="1" color="black"
+				 text="{ ' ' + data.to }" left="0" right="0" paddingTop="1" paddingBottom="0"
+				 fontWeight="{ data.unread ? 'bold' : 'normal' }"/>
+		
+		<s:Label width="100%" fontSize="{ FlexGlobals.topLevelApplication.smallLabelFontSize }"
+				 paddingLeft="0" paddingRight="0" backgroundAlpha="1" color="black"
+				 text="{ ' ' + data.subject }" paddingTop="1" paddingBottom="0"
+				 fontWeight="{ data.unread ? 'bold' : 'normal' }"/>
+		
+		<s:Label width="100%" fontSize="{ FlexGlobals.topLevelApplication.smallLabelFontSize }"
+				 paddingLeft="0" paddingRight="0" backgroundAlpha="1" color="black"
+				 text="{ ' ' + data.sent_date }" paddingTop="1" paddingBottom="0"
+				 fontWeight="{ data.unread ? 'bold' : 'normal' }"/>
+
+	</s:VGroup>
+
+</s:HGroup>
+
+					<s:Line width="100%">
+						<s:stroke><s:SolidColorStroke color="black" weight="1" joints="miter"/></s:stroke>
+					</s:Line>
+					
+				</s:ItemRenderer>
+			</fx:Component>
+		</s:itemRenderer>
+
+	</s:List>
+			</s:VGroup>
+
+ 		</s:Scroller>
+		</s:VGroup>
+	</s:SkinnableContainer>
+
+</s:View>

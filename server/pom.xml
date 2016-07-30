@@ -1,0 +1,247 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <artifactId>mail4hotspot</artifactId>
+  <packaging>war</packaging>
+  <!--  group et version sont importées du parent -->
+
+<!-- Les formats des fichiers de JavaEE7 sont tous indiqués ici : http://antoniogoncalves.org/2013/06/04/java-ee-7-deployment-descriptors/ -->
+
+<name>mail4hotspot server</name>
+
+  <parent>
+  	<groupId>fr.fenyo</groupId>
+  	<artifactId>mail4hotspot-pom-root</artifactId>
+  	<version>0.0.1-SNAPSHOT</version>
+  	<relativePath>../mail4hotspot - server - pom - root/pom.xml</relativePath>
+  </parent>
+
+<!-- To avoid the error "Build path specifies execution environment J2SE-1.5. There are no JREs installed in the workspace that are strictly compatible with this environment." after each
+ "right click on project/Maven/update project", even when the Java version has been modified in the Eclipse GUI, we need to add here: -->
+<properties>
+		<maven.compiler.source>1.8</maven.compiler.source>
+		<maven.compiler.target>1.8</maven.compiler.target>
+</properties>
+
+      <dependencies>
+
+		<dependency>
+			<groupId>javax.mail</groupId>
+			<artifactId>javax.mail-api</artifactId>
+		</dependency>
+		<dependency>
+		    <groupId>com.sun.mail</groupId>
+    		<artifactId>javax.mail</artifactId>
+		</dependency>
+		
+<!--  mvn dependency:analyze permet de connaître les dépendances non utilisées, donc à commenter -->
+
+<!-- 		<dependency>
+			<groupId>fr.fenyo</groupId>
+			<artifactId>mgmt-tools</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
+		</dependency>
+ -->
+        <!-- Import the JPA API using the provided scope It is included in JBoss
+            AS 7 / EAP 6 -->
+        <!-- <dependency>
+            <groupId>org.hibernate.javax.persistence</groupId>
+            <artifactId>hibernate-jpa-2.0-api</artifactId>
+            <scope>provided</scope>
+        </dependency> -->
+
+        <!-- Import Spring dependencies, these are either from community or versions
+            certified in WFK2 -->
+<!--          <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-asm</artifactId>
+        </dependency>
+ -->        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-aop</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-expression</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-beans</artifactId>
+        </dependency>
+ 
+         <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-context</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-context-support</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-tx</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-jdbc</artifactId>
+        </dependency>
+         <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-web</artifactId>
+        </dependency>
+       <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-orm</artifactId>
+        </dependency>
+         <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-webmvc</artifactId>
+        </dependency>
+
+         <dependency>
+            <groupId>taglibs</groupId>
+            <artifactId>standard</artifactId>
+        </dependency>
+ 
+         <dependency>
+            <groupId>commons-logging</groupId>
+            <artifactId>commons-logging</artifactId>
+            <!--  not provided in recent tomcat versions -->
+			<!-- <scope>provided</scope> -->
+		</dependency>
+
+        <dependency>
+            <groupId>commons-dbcp</groupId>
+            <artifactId>commons-dbcp</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+        </dependency>
+
+ 		<dependency>
+			<groupId>javax.servlet</groupId>
+			<artifactId>jstl</artifactId>
+		</dependency>
+
+ 		<dependency>
+			<groupId>javax.servlet</groupId>
+			<artifactId>servlet-api</artifactId>
+			<scope>provided</scope>
+		</dependency>
+
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-api</artifactId>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-core</artifactId>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-jcl</artifactId>
+      </dependency>
+	  <dependency>
+    	<groupId>org.apache.logging.log4j</groupId>
+	    <artifactId>log4j-web</artifactId>
+<!--     	<scope>runtime</scope> -->
+  	</dependency>
+ 
+ 		<!-- hibernate from JBoss - see http://mvnrepository.com/artifact/org.hibernate/
+		et surtout le repository JBoss et son interface nexus :
+		https://repository.jboss.org/nexus/index.html#nexus-search;quick~hibernate -->
+		
+		<dependency>
+			<groupId>org.hibernate</groupId>
+			<artifactId>hibernate-core</artifactId>
+			<version>5.0.2.Final</version>
+		</dependency>
+		<dependency>
+			<groupId>org.hibernate</groupId>
+			<artifactId>hibernate-entitymanager</artifactId>
+			<version>5.0.2.Final</version>
+		</dependency>
+
+<!-- 		
+		<dependency>
+			<groupId>org.hibernate</groupId>
+			<artifactId>hibernate-entitymanager</artifactId>
+			<version>4.0.1.Final</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.hibernate</groupId>
+			<artifactId>hibernate-ehcache</artifactId>
+			<version>4.0.1.Final</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.hibernate</groupId>
+			<artifactId>hibernate-tools</artifactId>
+			<version>3.2.4.GA</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.hibernate</groupId>
+			<artifactId>ejb3-persistence</artifactId>
+			<version>3.3.2.Beta1</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.hibernate</groupId>
+			<artifactId>hibernate-c3p0</artifactId>
+			<version>4.0.1.Final</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.hibernate</groupId>
+			<artifactId>hibernate-annotations</artifactId>
+			<version>3.5.6-Final</version>
+		</dependency> -->
+
+<!-- SLF4J - cf http://repo2.maven.org/maven2/org/slf4j/ -->
+<!-- 		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-log4j12</artifactId> 
+			<version>1.0.1</version>
+		</dependency>
+ -->
+		<dependency>
+			<groupId>postgresql</groupId>
+			<artifactId>postgresql</artifactId>
+			<version>9.1-901.jdbc4</version>
+		</dependency>
+
+        <dependency>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+			<version>1.6</version>
+        </dependency>
+
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+			<version>2.3</version>
+        </dependency>
+
+        <!-- oauth for Google: http://code.google.com/p/google-oauth-java-client/wiki/Setup#Maven -->
+        <dependency>
+			<groupId>com.google.oauth-client</groupId>
+			<artifactId>google-oauth-client</artifactId>
+			<version>1.10.1-beta</version>
+		</dependency>
+
+        <dependency>
+            <groupId>com.google.oauth-client</groupId>
+            <artifactId>google-oauth-client-servlet</artifactId>
+            <version>1.10.1-beta</version>
+        </dependency>
+
+        </dependencies>
+
+</project>

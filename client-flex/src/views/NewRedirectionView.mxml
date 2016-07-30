@@ -1,0 +1,255 @@
+<!-- (c) Alexandre Fenyo 2012, 2013, 2014, 2015, 2016 - alex@fenyo.net - http://fenyo.net - GPLv3 licensed -->
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009"
+		xmlns:s="library://ns.adobe.com/flex/spark"
+		xmlns:mx="library://ns.adobe.com/flex/mx"
+		xmlns:jeeserver="net.fenyo.mail4hotspot.dataservices.jeeserver.*"
+		creationComplete="createRedirectionView_creationCompleteHandler(event)"
+		viewDeactivate="createRedirectionView_deactivateHandler(event)"
+		viewActivate="createRedirectionView_viewActivateHandler(event)">
+	
+	<fx:Script>
+		<![CDATA[
+			import flashx.textLayout.formats.VerticalAlign;
+			import flashx.textLayout.tlf_internal;
+			
+			import mx.core.FlexGlobals;
+			import mx.events.*;
+			import mx.managers.*;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			
+			import net.fenyo.mail4hotspot.gui.*;
+			import net.fenyo.mail4hotspot.service.*;
+			
+			import spark.components.ViewNavigator;
+			import spark.events.ViewNavigatorEvent;
+			
+			private var focus_component : String = "";
+			
+			private function createRedirectionView_creationCompleteHandler(event:FlexEvent) : void {
+				// il faudrait les supprimer quand la vue n'est plus utilisée
+				errorLabel.addEventListener(Event.RESIZE, setErrorPosition);
+				errorLabel.addEventListener(mx.events.MoveEvent.MOVE, setErrorPosition);
+
+				text_ports.source = Main.TextPorts640;
+				text_ports.scaleX = text_ports.scaleY = text_ports.scaleZ = parentApplication.applicationDPI / 640;
+			}
+
+			// autre solution beaucoup plus simple :
+			// un errorLabel.setFocus() aurait certainement suffit pour repositionner le texte de l'erreur...
+			private function setErrorPosition(event : Event) : void {
+				if (errorLabel.y + errorLabel.height > scrollgroup.height)
+					scrollgroup.verticalScrollPosition = errorLabel.y + errorLabel.height - scrollgroup.height;
+			}
+
+			private function displayError(errorString : String):void {
+				errorLabel.text = resourceManager.getString('localizedContent', errorString);
+
+				line.visible = true;
+				line.includeInLayout = true;
+				errorLabel.visible = true;
+				errorLabel.includeInLayout = true;
+
+				setErrorPosition(null);
+			}
+			
+			protected function button_clickHandler(event:MouseEvent) : void
+			{
+				if (description.text.length == 0) {
+					displayError("NewRedirectionView_description_empty");
+					return;
+				}
+				
+				const pattern_number : RegExp = /^[1-9][0-9]*$/;
+				if (pattern_number.test(local_port.text) == false) {
+					displayError("NewRedirectionView_localport_not_a_number");
+					return;
+				}
+
+				const value_local_port : int = int(local_port.text);
+				if (value_local_port < 1024 || value_local_port > 65535) {
+					displayError("NewRedirectionView_localport_extremum");
+					return;
+				}
+
+				if (pattern_number.test(remote_port.text) == false) {
+					displayError("NewRedirectionView_remoteport_not_a_number");
+					return;
+				}
+				
+				const value_remote_port : int = int(remote_port.text);
+				if (value_local_port < 1 || value_local_port > 65535) {
+					displayError("NewRedirectionView_remoteport_extremum");
+					return;
+				}
+
+				const pattern_host : RegExp = /^[0-9a-zA-Z-_.]+$/;
+				if (pattern_host.test(remote_host.text) == false) {
+					displayError("NewRedirectionView_remotehost_incorrect");
+					return;
+				}
+
+				var obj : PortItem = new PortItem(value_local_port, value_remote_port, remote_host.text, description.text);
+				parentApplication.portsDataProvider.addItem(obj);
+				parentApplication.persistenceManager.setProperty("portsDataProvider", parentApplication.portsDataProvider.list);
+				parentApplication.persistenceManager.save();
+	
+				navigator.popView();
+			}
+			
+			private function createRedirectionView_errorHandler(event:Event) : void {
+				displayError('CreateAccountView_error');
+			}
+			
+			private function createRedirectionView_actionHandler(event:Event) : void {
+			}
+			
+			protected function createRedirectionView_viewActivateHandler(event:ViewNavigatorEvent) : void {
+				// ceci ajoute l'event de telle facon que même hors de cette vue on le traite comme cela :
+				stage.addEventListener(KeyboardEvent.KEY_DOWN, onKeyDown);
+			}
+			
+			protected function createRedirectionView_deactivateHandler(event:Event) : void {
+				stage.removeEventListener(KeyboardEvent.KEY_DOWN, onKeyDown);
+			}
+			
+			protected function onKeyDown(event:KeyboardEvent) : void {
+				if (event.keyCode == 10) {
+					event.preventDefault();
+					const comp : String = focus_component;
+					if (comp == "description") local_port.setFocus();
+					if (comp == "local_port") remote_host.setFocus();
+					if (comp == "remote_host") remote_port.setFocus();
+					if (comp == "remote_port") {
+						button.setFocus();
+						stage.focus = null;
+					}
+				}
+
+				if (event.keyCode == Keyboard.BACK) {
+					event.preventDefault();
+					navigator.popView();
+				}
+				else if (event.keyCode == Keyboard.MENU) {} 
+				else if (event.keyCode == Keyboard.SEARCH) {}
+			}
+			
+		]]>
+		
+	</fx:Script>
+	
+	<fx:Declarations>
+	</fx:Declarations>
+	
+	<s:layout>
+		<s:VerticalLayout paddingTop="0" paddingBottom="0" paddingLeft="0" paddingRight="0" gap="2" 
+						  horizontalAlign="center" verticalAlign="top"/>
+	</s:layout>
+	
+	<s:navigationContent>
+		<s:Button id="back" click="navigator.popView()" alpha=".8" styleName="back"/>
+	</s:navigationContent>
+	
+	<s:titleContent>
+		<s:HGroup width="100%" height="100%" horizontalAlign="center" verticalAlign="middle" gap="0">
+			<s:BitmapImage id="text_ports" alpha="{ Main.new_skin ? 1 : .4 }" fillMode="clip"/>
+		</s:HGroup>
+	</s:titleContent>
+	
+	<s:SkinnableContainer width="100%" height="100%" skinClass="net.fenyo.mail4hotspot.gui.MobileSkinnableContainerSkin">
+		<s:Scroller id="scroller" left="5" right="5" top="5" bottom="5" width="100%" height="100%">
+			
+			<s:VGroup id="scrollgroup" paddingLeft="5" paddingRight="5" paddingTop="5" paddingBottom="5" width="100%" height="100%">
+
+				<s:Label fontStyle="italic" textAlpha=".5" color="#FFFFFF" backgroundAlpha=".5" backgroundColor="#080000" width="100%" fontSize="{ parentApplication.headerFontSize }"
+						 text="{ resourceManager.getString('localizedContent', 'NewRedirectionView_header') }">
+					<s:filters>
+						<s:DropShadowFilter alpha=".5" distance="3" angle="45"/>
+					</s:filters>
+				</s:Label>
+				
+				<s:Label width="100%" fontSize="{ parentApplication.labelFontSize }"
+						 text="{ resourceManager.getString('localizedContent', 'PortRedirectionView_description') }"/>
+				<s:TextInput id="description" focusIn="{ focus_component = 'description' }"
+							 enter="stage.focus = null; local_port.setFocus()"
+							 width="100%" textAlign="left" skinClass="spark.skins.mobile.TextInputSkin" contentBackgroundAlpha=".8"/>
+
+				<!-- -->
+				
+				<s:Rect height="4"/>
+				<s:Line width="100%">
+					<s:stroke><s:SolidColorStroke color="0x000000" weight="1" joints="miter"/></s:stroke>
+				</s:Line>
+
+				<s:Label width="100%" fontSize="{ parentApplication.labelFontSize }"
+						 text="{ resourceManager.getString('localizedContent', 'PortRedirectionView_localport') }"/>
+				
+				<s:TextInput id="local_port" focusIn="{ focus_component = 'local_port' }"
+							 enter="stage.focus = null; remote_host.setFocus()"
+							 textAlign="left" width="100%" skinClass="spark.skins.mobile.TextInputSkin" contentBackgroundAlpha=".8"/>
+				
+				<!-- -->
+				
+				<s:Rect height="4"/>
+				<s:Line width="100%">
+					<s:stroke><s:SolidColorStroke color="0x000000" weight="1" joints="miter"/></s:stroke>
+				</s:Line>
+				
+				<s:Label width="100%" fontSize="{ parentApplication.labelFontSize }"
+						 text="{ resourceManager.getString('localizedContent', 'PortRedirectionView_remotehost') }"/>
+				
+				<s:TextInput id="remote_host" focusIn="{ focus_component = 'remote_host' }"
+							 enter="stage.focus = null; remote_port.setFocus()"
+							 textAlign="left" width="100%" skinClass="spark.skins.mobile.TextInputSkin" contentBackgroundAlpha=".8"/>
+				
+				<!-- -->
+				
+				<s:Rect height="4"/>
+				<s:Line width="100%">
+					<s:stroke><s:SolidColorStroke color="0x000000" weight="1" joints="miter"/></s:stroke>
+				</s:Line>
+				
+				<s:Label width="100%" fontSize="{ parentApplication.labelFontSize }"
+						 text="{ resourceManager.getString('localizedContent', 'PortRedirectionView_remoteport') }"/>
+				
+				<s:TextInput id="remote_port" focusIn="{ focus_component = 'remote_port' }"
+							 enter="stage.focus = null; button.setFocus()"
+							 textAlign="left" width="100%" skinClass="spark.skins.mobile.TextInputSkin" contentBackgroundAlpha=".8"/>
+				
+				<!-- -->
+
+				<s:Rect height="4"/>
+				<s:Line width="100%">
+					<s:stroke><s:SolidColorStroke color="0x000000" weight="1" joints="miter"/></s:stroke>
+				</s:Line>
+
+				<s:Label width="100%" fontSize="{ parentApplication.labelFontSize }" color="#CE0000" fontWeight="bold"
+						 text="{ resourceManager.getString('localizedContent', 'NewRedirectionView_restart_needed') }"/>
+
+				<s:Button id="button" width="100%"
+						  label="{ resourceManager.getString('localizedContent', 'CreateAccountView_create_button') }"
+						  click="button_clickHandler(event)">
+					<s:filters>
+						<s:DropShadowFilter alpha=".5" distance="3" angle="45"/>
+					</s:filters>
+				</s:Button>
+				
+				<s:VGroup width="100%" horizontalAlign="center">
+					<s:BusyIndicator id="busy" visible="false" enabled="true" includeInLayout="false"
+									 rotationInterval="200" symbolColor="blue"/>
+				</s:VGroup>
+				
+				<s:Rect height="4"/>
+				<s:Line id="line" visible="false" includeInLayout="false" width="100%">
+					<s:stroke><s:SolidColorStroke color="0x000000" weight="1" joints="miter"/></s:stroke>
+				</s:Line>
+				<s:Label id="errorLabel" visible="false" width="100%" color="#CE0000" includeInLayout="false"
+						 text="{ resourceManager.getString('localizedContent', 'CreateAccountView_error') }"
+						 textAlign="center"/>
+
+			</s:VGroup>
+		</s:Scroller>
+	</s:SkinnableContainer>
+	
+</s:View>

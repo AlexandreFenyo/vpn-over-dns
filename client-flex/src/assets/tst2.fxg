@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Graphic version="2.0" viewHeight="841.89" viewWidth="595.28" ai:appVersion="15.1.0.39" ATE:version="1.0.0" flm:version="1.0.0" d:id="1" d:using="" xmlns="http://ns.adobe.com/fxg/2008" xmlns:ATE="http://ns.adobe.com/ate/2009" xmlns:ai="http://ns.adobe.com/ai/2009" xmlns:d="http://ns.adobe.com/fxg/2008/dt" xmlns:flm="http://ns.adobe.com/flame/2008">
+  <Library/>
+  <Group ai:artboardActive="1" ai:artboardIndex="0" ai:seqID="1" d:layerType="page" d:pageHeight="841.89" d:pageWidth="595.28" d:type="layer" d:userLabel="Artboard 1">
+    <Group ai:objID="60a9700" ai:seqID="2" d:id="2" d:type="layer" d:userLabel="Layer 1">
+      <Group x="170" y="464.393" ai:objID="c823200" ai:seqID="3" flm:knockout="false">
+        <Rect width="247" height="69.4971" ai:objID="29f89080" ai:seqID="4">
+          <fill>
+            <LinearGradient x="302.674" y="34.749" scaleX="372.229" rotation="180">
+              <GradientEntry ratio="0.005618" color="#7DA6CA"/>
+              <GradientEntry ratio="0.073034" color="#355B7B"/>
+              <GradientEntry ratio="0.5" color="#E1E3E7"/>
+              <GradientEntry ratio="0.617977" color="#BBCCD9"/>
+              <GradientEntry ratio="0.665915" color="#B7CAD8"/>
+              <GradientEntry ratio="0.713668" color="#ABC2D5"/>
+              <GradientEntry ratio="0.761355" color="#96B6D0"/>
+              <GradientEntry ratio="0.808989" color="#7AA5C9"/>
+              <GradientEntry ratio="1" color="#105460"/>
+            </LinearGradient>
+          </fill>
+        </Rect>
+        <Rect x="13.3516" y="6.74316" width="220.297" height="56.0107" ai:objID="29f8c380" ai:seqID="5">
+          <fill>
+            <LinearGradient x="110.148" y="-8.76563" scaleX="74.5671" rotation="90">
+              <GradientEntry ratio="0.005618" color="#7DA6CA"/>
+              <GradientEntry ratio="0.073034" color="#355B7B"/>
+              <GradientEntry ratio="0.5" color="#E1E3E7"/>
+              <GradientEntry ratio="0.617977" color="#BBCCD9"/>
+              <GradientEntry ratio="0.665915" color="#B7CAD8"/>
+              <GradientEntry ratio="0.713668" color="#ABC2D5"/>
+              <GradientEntry ratio="0.761355" color="#96B6D0"/>
+              <GradientEntry ratio="0.808989" color="#7AA5C9"/>
+              <GradientEntry ratio="1" color="#105460"/>
+            </LinearGradient>
+          </fill>
+        </Rect>
+        <Rect x="20.7686" y="10.4902" width="205.463" height="48.5166" ai:objID="29f88c00" ai:seqID="6">
+          <fill>
+            <SolidColor/>
+          </fill>
+        </Rect>
+        <Rect x="22.2534" y="11.2393" width="202.494" height="47.0186" ai:objID="29f8b480" ai:seqID="7">
+          <fill>
+            <RadialGradient x="103.056" y="-12.1649" scaleX="357.532" scaleY="180.588">
+              <GradientEntry ratio="0" color="#FFFFFF"/>
+              <GradientEntry ratio="0.0788444" color="#C7DFEF"/>
+              <GradientEntry ratio="0.15493" color="#9EC8E3"/>
+              <GradientEntry ratio="0.227695" color="#83B9DC"/>
+              <GradientEntry ratio="0.292135" color="#79B3D9"/>
+              <GradientEntry ratio="0.646067" color="#0069B0"/>
+              <GradientEntry ratio="1" color="#051B30"/>
+            </RadialGradient>
+          </fill>
+        </Rect>
+        <Rect x="26.7031" y="13.4863" width="193.594" height="42.5234" ai:objID="29f92e00" ai:seqID="8">
+          <fill>
+            <RadialGradient x="101.915" y="53.6034" scaleX="414.217" scaleY="209.219">
+              <GradientEntry ratio="0" color="#BCD9E7"/>
+              <GradientEntry ratio="0.0788444" color="#6EC0E0"/>
+              <GradientEntry ratio="0.15493" color="#34ADDB"/>
+              <GradientEntry ratio="0.227695" color="#0EA2D8"/>
+              <GradientEntry ratio="0.292135" color="#009DD7"/>
+              <GradientEntry ratio="0.646067" color="#007299"/>
+              <GradientEntry ratio="1" color="#2C2C5B"/>
+            </RadialGradient>
+          </fill>
+        </Rect>
+      </Group>
+    </Group>
+  </Group>
+  <Private>
+      <ai:PrivateElement d:ref="#1">
+        <ai:SaveOptions>
+          <ai:Dict data="B clipToActiveArtboard 1 I expandBlendsOption 5 B downsampleLinkedImages 0 I rasterizeResolution 72 I preserveGradientPolicy 4 I preserveFilterPolicy 3 I preserveTextPolicy 4 B includeXMP 0 B includeSymbol 0 B aiEditCap 1 B writeImages 1 I versionKey 2 B includeObjectOutsideArtboard 0 "/>
+        </ai:SaveOptions>
+        <ai:DocData base="tst2.assets/images" rulerCanvasDiffH="296.5" rulerCanvasDiffV="421.5">
+          <ai:DocRasterSettings>
+            <ai:Dict data="R padd 36 B mask 0 B spot 1 B alis 0 I dpi. 72 I colr 4 "/>
+          </ai:DocRasterSettings>
+        </ai:DocData>
+        <ai:AutoGenImageList>
+          <ai:Dict/>
+        </ai:AutoGenImageList>
+      </ai:PrivateElement>
+      <ai:PrivateElement flm:hashcode="389B31E413CBF0DC2F9EE7A20A147589" d:ref="#2">
+        <ai:LayerOptions color="5 79.31 257 128.502"/>
+      </ai:PrivateElement>
+    </Private>
+  </Graphic>

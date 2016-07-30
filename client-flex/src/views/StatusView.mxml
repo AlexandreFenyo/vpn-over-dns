@@ -1,0 +1,490 @@
+<!-- (c) Alexandre Fenyo 2012, 2013, 2014, 2015, 2016 - alex@fenyo.net - http://fenyo.net - GPLv3 licensed -->
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		xmlns:s="library://ns.adobe.com/flex/spark"
+		destructionPolicy="never"
+		activate="statusView_activateHandler(event)"
+		deactivate="statusView_deActivateHandler(event)"
+		viewActivate="statusView_viewActivateHandler(event)"
+		creationComplete="statusView_creationCompleteHandler(event)">
+
+	<fx:Script>
+		<![CDATA[
+			import mx.core.FlexGlobals;
+			import mx.events.*;
+			import mx.resources.ResourceManager;
+
+			import spark.events.*;
+			import mx.managers.*;
+
+			import net.fenyo.mail4hotspot.gui.*;
+			import net.fenyo.mail4hotspot.service.*;
+			import net.fenyo.mail4hotspot.tools.*;
+
+			private var angle : Number = 0;
+			private var vumeter_scale : Number = 1.0;
+
+			private function statusView_activateHandler(event : Event) : void {
+				// vérifier que c'est bien réalisé sur Android
+				// trace("activate");
+				// au lancement de l'appli, ça n'est pas appelé, seulement quand on revient du background
+				VuMeter.activate(true);
+			}
+
+			private function statusView_deActivateHandler(event : Event) : void {
+				// trace("deactivate");
+				// quand l'appli est en background, pas quand la vue n'est pas visible
+				VuMeter.activate(false);
+			}
+
+			private function statusView_viewActivateHandler(event:ViewNavigatorEvent) : void {
+				if (parentApplication.popup_ad_can_appear == true) {
+					parentApplication.popup_ad_can_appear = false;
+					parentApplication.popUpGeneric(ResourceManager.getInstance().getString('localizedContent', 'StatusView_ad_title'), ResourceManager.getInstance().getString('localizedContent', 'StatusView_ad_content'));
+				}
+			}
+
+			private function statusView_creationCompleteHandler(event:FlexEvent) : void {
+				VuMeter.progress_bar_for_mails_text = ResourceManager.getInstance().getString('localizedContent', 'StatusView_state_no_new_mail');
+				VuMeter.progress_bar_for_messages_text = ResourceManager.getInstance().getString('localizedContent', 'DnsQuerierFactory_no_message');
+
+				invisible_picture_downstream.source = Main.DownStream;
+				picture_downstream.source = Main.DownStream;
+				picture_upstream.source = Main.UpStream;
+				picture_streamerror.source = Main.StreamError;
+
+// Alex
+left_screw.source = Main.PictureScrew640;
+left_screw.scaleX = left_screw.scaleY = left_screw.scaleZ = parentApplication.applicationDPI / 640;
+
+right_screw.source = Main.PictureScrew640;
+right_screw.scaleX = right_screw.scaleY = right_screw.scaleZ = parentApplication.applicationDPI / 640;
+
+//vumeter.source = Main.PictureVumeterBg640;
+//vumeter.scaleX = vumeter.scaleY = vumeter.scaleZ = parentApplication.applicationDPI / 640;
+
+//vumetermask.source = Main.PictureVumeterMask640;
+//vumetermask.scaleX = vumetermask.scaleY = vumetermask.scaleZ = parentApplication.applicationDPI / 640;
+
+if (ResourceManager.getInstance().localeChain[0].toString().substr(0, 2) == "fr") text_status.source = Main.TextStatut640;
+else text_status.source = Main.TextStatus640;
+text_status.scaleX = text_status.scaleY = text_status.scaleZ = parentApplication.applicationDPI / 640;
+
+telephone.source = Main.Telephone640;
+telephone.scaleX = telephone.scaleY = telephone.scaleZ = parentApplication.applicationDPI / 640;
+				
+invisible_picture_downstream.scaleX = (parentApplication.applicationDPI / 320) * 16 / 128 * 2;
+picture_downstream.scaleX = invisible_picture_downstream.scaleX;
+picture_upstream.scaleX = invisible_picture_downstream.scaleX;
+picture_streamerror.scaleX = invisible_picture_downstream.scaleX;
+invisible_picture_downstream.scaleY = invisible_picture_downstream.scaleX;
+picture_downstream.scaleY = invisible_picture_downstream.scaleX;
+picture_upstream.scaleY = invisible_picture_downstream.scaleX;
+picture_streamerror.scaleY = invisible_picture_downstream.scaleX;
+
+				switch (parentApplication.applicationDPI) {
+					default:
+					case 160:
+						vumeter_scale = 267 / 620;
+//						left_screw.source = Main.PictureScrew160;
+//						right_screw.source = Main.PictureScrew160;
+						vumeter.source = Main.PictureVumeterBg160;
+						vumetermask.source = Main.PictureVumeterMask160;
+//						if (ResourceManager.getInstance().localeChain[0].toString().substr(0, 2) == "fr") text_status.source = Main.TextStatut160;
+//						else text_status.source = Main.TextStatus160;
+//						telephone.source = Main.Telephone160;
+						break;
+
+					case 120:
+						vumeter_scale = 200 / 620;
+//						left_screw.source = Main.PictureScrew120;
+//						right_screw.source = Main.PictureScrew120;
+						vumeter.source = Main.PictureVumeterBg120;
+						vumetermask.source = Main.PictureVumeterMask120;
+//						if (ResourceManager.getInstance().localeChain[0].toString().substr(0, 2) == "fr") text_status.source = Main.TextStatut120;
+//						else text_status.source = Main.TextStatus120;
+//						telephone.source = Main.Telephone120;
+// Alex					
+// left_screw.scaleX = left_screw.scaleY = left_screw.scaleZ = 3;
+						break;
+
+					case 240:
+						vumeter_scale = 400 / 620;
+//						left_screw.source = Main.PictureScrew240;
+//						right_screw.source = Main.PictureScrew240;
+						vumeter.source = Main.PictureVumeterBg240;
+						vumetermask.source = Main.PictureVumeterMask240;
+//						if (ResourceManager.getInstance().localeChain[0].toString().substr(0, 2) == "fr") text_status.source = Main.TextStatut240;
+//						else text_status.source = Main.TextStatus240;
+//						telephone.source = Main.Telephone240;
+						break;
+					
+					case 320:
+						vumeter_scale = 533 / 620;
+//						left_screw.source = Main.PictureScrew320;
+//						right_screw.source = Main.PictureScrew320;
+						vumeter.source = Main.PictureVumeterBg320;
+						vumetermask.source = Main.PictureVumeterMask320;
+//						text_status.source = Main.TextStatus320;
+//						if (ResourceManager.getInstance().localeChain[0].toString().substr(0, 2) == "fr") text_status.source = Main.TextStatut320;
+//						else text_status.source = Main.TextStatus320;
+//						telephone.source = Main.Telephone320;
+						break;
+
+					case 480:
+						vumeter_scale = 800 / 620;
+//						left_screw.source = Main.PictureScrew480;
+//						right_screw.source = Main.PictureScrew480;
+						vumeter.source = Main.PictureVumeterBg480;
+						vumetermask.source = Main.PictureVumeterMask480;
+//						text_status.source = Main.TextStatus480;
+//						if (ResourceManager.getInstance().localeChain[0].toString().substr(0, 2) == "fr") text_status.source = Main.TextStatut480;
+//						else text_status.source = Main.TextStatus480;
+//						telephone.source = Main.Telephone480;
+						break;
+
+					case 640:
+						vumeter_scale = 1067 / 620;
+//						left_screw.source = Main.PictureScrew640;
+//						right_screw.source = Main.PictureScrew640;
+						vumeter.source = Main.PictureVumeterBg640;
+						vumetermask.source = Main.PictureVumeterMask640;
+//						text_status.source = Main.TextStatus640;
+//						if (ResourceManager.getInstance().localeChain[0].toString().substr(0, 2) == "fr") text_status.source = Main.TextStatut640;
+//						else text_status.source = Main.TextStatus640;
+//						telephone.source = Main.Telephone640;
+						break;
+
+				}
+
+				// point fixe
+				needle.xTo = 304 * vumeter_scale;
+				needle.yTo = 341 * vumeter_scale;
+
+				// point mobile
+				needle.xFrom = (304 - 270 * Math.sin(Math.PI * 45 / 180)) * vumeter_scale;
+				needle.yFrom = (341 - 270 * Math.cos(Math.PI * 45 / 180)) * vumeter_scale;
+			}
+
+			protected function button1_clickHandler(event : MouseEvent) : void {
+				Application.checkNewMails();
+			}
+
+			protected function button2_clickHandler(event : MouseEvent) : void {
+				Application.stopCheckingNewMails(resourceManager.getString('localizedContent', 'StatusView_state_stopped'));
+			}
+
+			public function setAngle(angle : Number) : void {
+				// point variable de l'aiguille (le plus en haut de l'écran)
+				needle.xFrom = (304 - 270 * Math.sin(Math.PI * angle / 180)) * vumeter_scale;
+				needle.yFrom = (341 - 270 * Math.cos(Math.PI * angle / 180)) * vumeter_scale;
+			}
+		]]>
+	</fx:Script>
+
+	<fx:Declarations>
+		<!-- Placer ici les éléments non visuels (services et objets de valeur, par exemple). -->
+	</fx:Declarations>
+
+	<s:layout>
+		<s:VerticalLayout paddingTop="0" paddingBottom="0" paddingLeft="0" paddingRight="0" gap="2" 
+						  horizontalAlign="center" verticalAlign="top"/>
+	</s:layout>
+
+	<s:titleContent>
+		<s:Graphic x="0" y="0">             
+			<s:BitmapImage id="left_screw" alpha="{ Main.new_skin ? 1 : .5 }" fillMode="clip"/>
+		</s:Graphic>
+		<s:HGroup width="100%" height="100%" horizontalAlign="center" verticalAlign="middle" gap="0">
+			<s:BitmapImage id="text_status" alpha="{ Main.new_skin ? 1 : .4 }" fillMode="clip"/>
+		</s:HGroup>
+		<s:Graphic x="0" y="0">             
+			<s:BitmapImage id="right_screw" alpha="{ Main.new_skin ? 1 : .5 }"  fillMode="clip"/>
+		</s:Graphic>
+	</s:titleContent>
+
+	<s:SkinnableContainer width="100%" height="100%" skinClass="net.fenyo.mail4hotspot.gui.MobileSkinnableContainerSkin">
+		<s:Scroller left="5" right="5" top="5" bottom="5" width="100%" height="100%">
+			
+			<s:VGroup paddingLeft="5" paddingRight="5" paddingTop="5" paddingBottom="5" width="100%" height="100%" horizontalAlign="center">
+
+				<s:Label textAlign="center" fontStyle="normal" textAlpha=".5" color="#FFFFFF" backgroundAlpha=".5" backgroundColor="#2a2b2f" width="100%" fontSize="{ parentApplication.headerFontSize }"
+						 text="{ resourceManager.getString('localizedContent', 'StatusView_header') }">
+					<s:filters>
+						<s:DropShadowFilter alpha=".5" distance="3" angle="45"/>
+					</s:filters>
+				</s:Label>
+				
+				<s:Graphic x="0" y="0">             
+					<s:BitmapImage id="vumeter" fillMode="clip"/>
+					<s:Line id="needle">
+						<s:stroke>
+							<s:SolidColorStroke color="red" weight="1"/>
+						</s:stroke>
+						<s:filters>
+							<s:DropShadowFilter alpha=".5" distance="3" angle="45"/>
+						</s:filters>
+					</s:Line>
+					<s:BitmapImage id="vumetermask" fillMode="clip"/>
+				</s:Graphic>
+
+<!--				<s:Rect height="4"/> -->
+				<s:Line width="100%">
+					<s:stroke><s:SolidColorStroke color="0x000000" weight="1" joints="miter"/></s:stroke>
+				</s:Line>
+
+				<s:HGroup width="100%" horizontalAlign="center">
+					<s:Button id="button_start" width="40%" label="{ resourceManager.getString('localizedContent', 'StatusView_button_start') }" click="button1_clickHandler(event)">
+						<s:filters>
+							<s:DropShadowFilter alpha=".5" distance="3" angle="45"/>
+						</s:filters>
+					</s:Button>
+					<s:Rect width="5%"/>
+					<s:Button id="button_stop" enabled="false" width="40%" label="{ resourceManager.getString('localizedContent', 'StatusView_button_stop') }" click="button2_clickHandler(event)">
+						<s:filters>
+							<s:DropShadowFilter alpha=".5" distance="3" angle="45"/>
+						</s:filters>
+					</s:Button>
+				</s:HGroup>
+
+				<s:Line width="100%">
+					<s:stroke><s:SolidColorStroke color="0x000000" weight="1" joints="miter"/></s:stroke>
+				</s:Line>
+
+				<!-- test -->
+				<s:HGroup fontSize="{ parentApplication.labelFontSize }" gap="5" horizontalAlign="center" width="100%">
+
+					<s:VGroup gap="5" width="100%">
+						<s:HGroup>
+							<s:Label width="100%" text=" "/>
+							<!-- pour assurer la bonne hauteur de cette case vide -->
+							<s:BitmapImage visible="false" id="invisible_picture_downstream" fillMode="clip"/>
+						</s:HGroup>
+						
+						<s:HGroup width="100%" height="1">
+							<s:Rect width="100%" height="100%">
+								<s:fill>
+									<s:SolidColor color="black"/>
+								</s:fill>
+							</s:Rect>
+						</s:HGroup>
+						
+						<s:HGroup width="100%">
+							<s:Label textAlign="right" width="100%" text="{ resourceManager.getString('localizedContent', 'StatusView_dns_packets') }"/>
+						</s:HGroup>
+						
+						<s:HGroup width="100%" height="1">
+							<s:Rect width="100%" height="100%">
+								<s:fill>
+									<s:SolidColor color="black"/>
+								</s:fill>
+							</s:Rect>
+						</s:HGroup>
+						
+						<s:HGroup width="100%">
+							<s:Label textAlign="right" width="100%" text="{ resourceManager.getString('localizedContent', 'StatusView_encap_bytes') }"/>
+						</s:HGroup>
+					</s:VGroup>
+					
+					<s:VGroup gap="5" width="1" height="100%">
+						<s:Rect width="100%" height="100%">
+							<s:fill>
+								<s:SolidColor color="black"/>
+							</s:fill>
+						</s:Rect>
+					</s:VGroup>
+					
+					<s:VGroup gap="5">
+						<s:HGroup width="100%" horizontalAlign="center">
+							<s:Label text=" "/>
+							<s:BitmapImage id="picture_downstream" fillMode="clip"/>
+							<s:Label text=" "/>
+						</s:HGroup>
+						
+						<s:HGroup width="100%" height="1">
+							<s:Rect width="100%" height="100%">
+								<s:fill>
+									<s:SolidColor color="black"/>
+								</s:fill>
+							</s:Rect>
+						</s:HGroup>
+						
+						<s:HGroup>
+							<s:Label text="{ VuMeter.label_dns_packets_in }"/>
+						</s:HGroup>
+						
+						<s:HGroup width="100%" height="1">
+							<s:Rect width="100%" height="100%">
+								<s:fill>
+									<s:SolidColor color="black"/>
+								</s:fill>
+							</s:Rect>
+						</s:HGroup>
+						
+						<s:HGroup>
+							<s:Label text="{ VuMeter.label_encapsulated_bytes_in }"/>
+						</s:HGroup>
+					</s:VGroup>
+					
+					<s:VGroup gap="5" width="1" height="100%">
+						<s:Rect width="100%" height="100%">
+							<s:fill>
+								<s:SolidColor color="black"/>
+							</s:fill>
+						</s:Rect>
+					</s:VGroup>
+					
+					<s:VGroup gap="5">
+						<s:HGroup width="100%" horizontalAlign="center">
+							<s:Label text=" "/>
+							<s:BitmapImage id="picture_upstream" fillMode="clip"/>
+							<s:Label text=" "/>
+						</s:HGroup>
+
+						<s:HGroup width="100%" height="1">
+							<s:Rect width="100%" height="100%">
+								<s:fill>
+									<s:SolidColor color="black"/>
+								</s:fill>
+							</s:Rect>
+						</s:HGroup>
+
+						<s:HGroup>
+							<s:Label text="{ VuMeter.label_dns_packets_out }"/>
+						</s:HGroup>
+						
+						<s:HGroup width="100%" height="1">
+							<s:Rect width="100%" height="100%">
+								<s:fill>
+									<s:SolidColor color="black"/>
+								</s:fill>
+							</s:Rect>
+						</s:HGroup>
+
+						<s:HGroup>
+							<s:Label text="{ VuMeter.label_encapsulated_bytes_out }"/>
+						</s:HGroup>
+					</s:VGroup>
+					
+					<s:VGroup gap="5" width="1" height="100%">
+						<s:Rect width="100%" height="100%">
+							<s:fill>
+								<s:SolidColor color="black"/>
+							</s:fill>
+						</s:Rect>
+					</s:VGroup>
+					
+					<s:VGroup gap="5">
+						<s:HGroup horizontalAlign="center" width="100%" id="c4l1">
+							<s:Label text=" "/>
+							<!-- <s:BitmapImage id="picture_streamerror" fillMode="clip" scaleX="3" scaleY="3" scaleZ="3"/> -->
+							<s:BitmapImage id="picture_streamerror" fillMode="clip"/>
+							<s:Label text=" "/>
+						</s:HGroup>
+						
+						<s:HGroup width="100%" height="1">
+							<s:Rect width="100%" height="100%">
+								<s:fill>
+									<s:SolidColor color="black"/>
+								</s:fill>
+							</s:Rect>
+						</s:HGroup>
+
+						<s:HGroup>
+							<s:Label text="{ VuMeter.label_dns_packets_error }"/>
+						</s:HGroup>
+						
+						<s:HGroup width="100%" height="1">
+							<s:Rect width="100%" height="100%">
+								<s:fill>
+									<s:SolidColor color="black"/>
+								</s:fill>
+							</s:Rect>
+						</s:HGroup>
+
+						<s:HGroup>
+							<s:Label text=" "/>
+						</s:HGroup>
+					</s:VGroup>
+
+				</s:HGroup>
+				
+				<s:BorderContainer borderWeight="2" width="100%" cornerRadius="10" borderColor="#B3B3B3" backgroundColor="#998675" backgroundAlpha=".16" borderVisible="true">
+					<s:layout>
+						<s:VerticalLayout 
+							paddingLeft="5" paddingRight="5" 
+							paddingTop="5" paddingBottom="5" gap="2"/>
+					</s:layout>
+					<s:Label color="black" text="{ VuMeter.progress_bar_for_mails_text }" fontSize="{ parentApplication.labelFontSize }"/>
+					<s:BorderContainer id="border_container_1" height="26" backgroundAlpha="0" borderWeight="2" width="100%" borderColor="#B3B3B3">
+
+						<s:Rect x="1" y="1" alpha="1" width="{ (border_container_1.width - 6) * VuMeter.progress_bar_for_mails_ratio / 1000 }" height="20">
+							<s:fill>
+								<s:LinearGradient x="60" y="24" scaleX="24" rotation="270">
+									<s:GradientEntry ratio="0" color="#006837"/>
+									<s:GradientEntry ratio="0.408822" color="#036A37"/>
+									<s:GradientEntry ratio="0.639392" color="#127739"/>
+									<s:GradientEntry ratio="0.741464" color="#23833A"/>
+									<s:GradientEntry ratio="0.834089" color="#39953D"/>
+									<s:GradientEntry ratio="1" color="#7AC943"/>
+								</s:LinearGradient>
+							</s:fill>
+						</s:Rect>
+
+						<s:Rect x="1" y="1" alpha="1" width="{ border_container_1.width - 6 }" height="20">
+							<s:fill>
+								<s:LinearGradient x="219" y="24" scaleX="24" rotation="270">
+									<s:GradientEntry ratio="0" color="#808080"/>
+									<s:GradientEntry ratio="0.220582" color="#767676" alpha="0.779418"/>
+									<s:GradientEntry ratio="0.469662" color="#5D5D5D" alpha="0.530338"/>
+									<s:GradientEntry ratio="0.730109" color="#353535" alpha="0.269891"/>
+									<s:GradientEntry ratio="1" alpha="0"/>
+								</s:LinearGradient>
+							</s:fill>
+						</s:Rect>
+					</s:BorderContainer>
+				</s:BorderContainer>
+
+				<s:BorderContainer borderWeight="2" width="100%" cornerRadius="10" borderColor="#B3B3B3" backgroundColor="#998675" backgroundAlpha=".16" borderVisible="true">
+					<s:layout>
+						<s:VerticalLayout 
+							paddingLeft="5" paddingRight="5" 
+							paddingTop="5" paddingBottom="5" gap="2"/>
+					</s:layout>
+					<s:Label color="black" text="{ VuMeter.progress_bar_for_messages_text }" fontSize="{ parentApplication.labelFontSize }"/>
+					<s:BorderContainer id="border_container_2" height="26" backgroundAlpha="0" borderWeight="2" width="100%" borderColor="#B3B3B3">
+						
+						<s:Rect x="1" y="1" alpha="1" width="{ (border_container_2.width - 6) * VuMeter.progress_bar_for_messages_ratio / 1000 }" height="20">
+							<s:fill>
+								<s:LinearGradient x="60" y="24" scaleX="24" rotation="270">
+									<s:GradientEntry ratio="0" color="#006837"/>
+									<s:GradientEntry ratio="0.408822" color="#036A37"/>
+									<s:GradientEntry ratio="0.639392" color="#127739"/>
+									<s:GradientEntry ratio="0.741464" color="#23833A"/>
+									<s:GradientEntry ratio="0.834089" color="#39953D"/>
+									<s:GradientEntry ratio="1" color="#7AC943"/>
+								</s:LinearGradient>
+							</s:fill>
+						</s:Rect>
+						
+						<s:Rect x="1" y="1" alpha="1" width="{ border_container_2.width - 6 }" height="20">
+							<s:fill>
+								<s:LinearGradient x="219" y="24" scaleX="24" rotation="270">
+									<s:GradientEntry ratio="0" color="#808080"/>
+									<s:GradientEntry ratio="0.220582" color="#767676" alpha="0.779418"/>
+									<s:GradientEntry ratio="0.469662" color="#5D5D5D" alpha="0.530338"/>
+									<s:GradientEntry ratio="0.730109" color="#353535" alpha="0.269891"/>
+									<s:GradientEntry ratio="1" alpha="0"/>
+								</s:LinearGradient>
+							</s:fill>
+						</s:Rect>
+					</s:BorderContainer>
+				</s:BorderContainer>
+
+<s:BitmapImage visible="{ Main.tablet }" id="telephone" fillMode="clip"/>
+
+			</s:VGroup>
+		</s:Scroller>
+	</s:SkinnableContainer>
+
+</s:View>

@@ -1,0 +1,5 @@
+
+Before using maven, install dependencies in local maven repository by running once:
+ cd scripts; ./make-install-FlashRuntimeExtensions.sh
+
+

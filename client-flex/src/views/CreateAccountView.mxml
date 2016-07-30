@@ -1,0 +1,387 @@
+<!-- (c) Alexandre Fenyo 2012, 2013, 2014, 2015, 2016 - alex@fenyo.net - http://fenyo.net - GPLv3 licensed -->
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009"
+		xmlns:s="library://ns.adobe.com/flex/spark"
+		xmlns:mx="library://ns.adobe.com/flex/mx"
+		xmlns:jeeserver="net.fenyo.mail4hotspot.dataservices.jeeserver.*"
+		creationComplete="createAccountView_creationCompleteHandler(event)"
+		viewDeactivate="createAccountView_deactivateHandler(event)"
+		viewActivate="createAccountView_viewActivateHandler(event)">
+
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.air.sampleextensions.android.licensing.*;
+			
+			import flash.net.dns.*;
+			
+			import flashx.textLayout.formats.VerticalAlign;
+			
+			import mx.core.FlexGlobals;
+			import mx.events.*;
+			import mx.managers.*;
+			import mx.resources.ResourceManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.URLUtil;
+			
+			import net.fenyo.extension.Ssl;
+			import net.fenyo.mail4hotspot.gui.*;
+			import net.fenyo.mail4hotspot.tools.GenericTools;
+			
+			import spark.components.ViewNavigator;
+			import spark.events.ViewNavigatorEvent;
+
+			private var lc : LicenseChecker;
+
+			private var focus_component : String = "";
+
+			private static const ssl : Ssl = new Ssl();
+
+			private function createAccountView_creationCompleteHandler(event:FlexEvent) : void {
+				// il faudrait les supprimer quand la vue n'est plus utilisée
+				errorLabel.addEventListener(Event.RESIZE, setErrorPosition);
+				errorLabel.addEventListener(mx.events.MoveEvent.MOVE, setErrorPosition);
+
+				if (resourceManager.localeChain[0].toString().substr(0, 2) == "fr") text_creer.source = Main.TextCreer640;
+				else text_creer.source = Main.TextNewAccount640;
+				text_creer.scaleX = text_creer.scaleY = text_creer.scaleZ = parentApplication.applicationDPI / 640;
+			}
+
+			private function setErrorPosition(event : Event) : void {
+				if (errorLabel.y + errorLabel.height > scrollgroup.height)
+					scrollgroup.verticalScrollPosition = errorLabel.y + errorLabel.height - scrollgroup.height;
+			}
+
+			private function displayError(errorString:String):void {
+				errorLabel.text = resourceManager.getString('localizedContent', errorString);
+				line.visible = true;
+				line.includeInLayout = true;
+				errorLabel.visible = true;
+				errorLabel.includeInLayout = true;
+				button.visible = true;
+				button.includeInLayout = true;
+				busy.visible = false;
+				busy.includeInLayout = false;
+
+				setErrorPosition(null);
+			}
+
+			private function displayBusy():void {
+				line.visible = false;
+				line.includeInLayout = false;
+				errorLabel.visible = false;
+				errorLabel.includeInLayout = false;
+				button.visible = false;
+				button.includeInLayout = false;
+				busy.visible = true;
+				busy.includeInLayout = true;
+			}
+
+			protected function button_clickHandler(event : MouseEvent) : void {
+				var pattern:RegExp = /^[a-zA-Z0-9]{6,}$/;
+				if (Main.release_info_account_type == "LOGIN_ONLY") {
+					displayError('CreateAccountView_loginOnlyError');
+				} else if (pattern.test(login.text) == false) {
+					displayError('CreateAccountView_loginInputError');
+				} else if (password.text != password2.text) {
+					displayError('CreateAccountView_password2InputError');
+				} else if (pattern.test(password.text) == false) {
+					displayError('CreateAccountView_passwordInputError');
+				} else {
+					back.enabled = false;
+					login.enabled = false;
+					password.enabled = false;
+					password2.enabled = false;
+
+					displayBusy();
+
+					lc = new LicenseChecker();
+					lc.addEventListener(ErrorEvent.ERROR, licenseErrorHandler);
+					lc.addEventListener(LicenseStatusEvent.STATUS, licenseResultHandler);
+					lc.checkLicense();
+				}
+			}
+
+			private function licenseErrorHandler(event : ErrorEvent) : void {
+				// trace("CreateAccountView.licenseErrorHandler(): " + event.toString());
+				// FlexGlobals.topLevelApplication.popUpGeneric("CreateAccountView.licenseErrorHandler()", event.toString());
+
+				lc.removeEventListener(ErrorEvent.ERROR, licenseErrorHandler);
+				lc.removeEventListener(LicenseStatusEvent.STATUS, licenseResultHandler);
+
+				back.enabled = true;
+				login.enabled = true;
+				password.enabled = true;
+				password2.enabled = true;
+				
+				displayError('CreateAccountView_licenseError');
+			}
+
+			private function licenseResultHandler(event : LicenseStatusEvent) : void {
+				// trace("CreateAccountView.licenseResultHandler(): status: " + event.status + " statusReason: " + event.statusReason);
+				// FlexGlobals.topLevelApplication.popUpGeneric("CreateAccountView.licenseResultHandler()", event.toString() + " - status: " + event.status + " - statusReason: " + event.statusReason);
+				
+				lc.removeEventListener(ErrorEvent.ERROR, licenseErrorHandler);
+				lc.removeEventListener(LicenseStatusEvent.STATUS, licenseResultHandler);
+
+				if (event.status == LicenseStatus.LICENSED) {
+					if (!DNSResolver.isSupported) {
+
+						ssl.addEventListener(StatusEvent.STATUS, onStatus);
+						ssl.get('https://www.vpnoverdns.com/mail4hotspot/app/mobile-create-user',
+							'username=' + escape(login.text) + '&password=' + escape(password.text) + '&info=' + escape(Main.getReleaseInfos()),
+							10000);
+
+					} else {
+
+						CreateUserResult.addEventListener(ResultEvent.RESULT, createAccountView_actionHandler);
+						CreateUserResult.addEventListener(FaultEvent.FAULT, createAccountView_errorHandler); 
+						CreateUserResult.token = jeeserver.MobileCreateUser(login.text, password.text, Main.getReleaseInfos());
+
+					}
+				}
+				else licenseErrorHandler(new ErrorEvent(ErrorEvent.ERROR));
+			}
+
+			// Android
+			private function onStatus(event : StatusEvent) : void {
+				ssl.removeEventListener(StatusEvent.STATUS, onStatus);
+				
+				// event.code: ERROR or OK
+				// event.level: <results><statusCode>1</statusCode><statusString>invalid password</statusString><provider></provider><email></email><login></login><uuid></uuid></results>
+				// trace('AttachAccountView.onStatus(): event.code=' + event.code);
+				// trace('AttachAccountView.onStatus(): event.level=' + event.level);
+				
+				if (event.code != "OK") createAccountView_errorHandler(event);
+				else createAccountView_action(
+					GenericTools.getXMLField(event.level, "statusCode"),
+					GenericTools.getXMLField(event.level, "uuid")
+				);
+			}
+
+			private function createAccountView_errorHandler(event:Event):void {
+				back.enabled = true;
+				login.enabled = true;
+				password.enabled = true;
+				password2.enabled = true;
+
+				displayError('CreateAccountView_error');
+			}
+
+			private function createAccountView_actionHandler(event : Event) : void {
+					createAccountView_action(
+						CreateUserResult.lastResult.statusCode,
+						CreateUserResult.lastResult.uuid
+					);
+				}
+
+			private function createAccountView_action(statusCode : String, uuid : String) : void {
+				back.enabled = true;
+				login.enabled = true;
+				password.enabled = true;
+				password2.enabled = true;
+
+				switch (statusCode) {
+					case '0':
+						line.visible = false;
+						line.includeInLayout = false;
+						errorLabel.visible = false;
+						errorLabel.includeInLayout = false;
+						button.visible = true;
+						button.includeInLayout = true;
+						busy.visible = false;
+						busy.includeInLayout = false;
+
+						parentApplication.mailsDataProvider.removeAll();
+
+						parentApplication.persistenceManager.setProperty("login", login.text);
+						parentApplication.persistenceManager.setProperty("password", password.text);
+						password.text = "";
+						password2.text = "";
+						parentApplication.persistenceManager.setProperty("uuid", uuid);
+						parentApplication.persistenceManager.setProperty("provider", "");
+						parentApplication.persistenceManager.setProperty("provider_email", "");
+						parentApplication.persistenceManager.setProperty("provider_login", "");
+						// parentApplication.persistenceManager.setProperty("provider_password", "");
+						parentApplication.persistenceManager.setProperty("loggedIn", "true");
+
+						parentApplication.persistenceManager.save();
+
+						parentApplication.viewnavigator_login.popToFirstView();
+						parentApplication.viewnavigator_login.visible = false;
+						if (!Main.tablet) {
+							parentApplication.viewnavigator_main.visible = true;
+						} else {
+							parentApplication.tablet_splitviewnavigator.visible = true;
+						}
+
+						var popUp : PopUpLogin = new PopUpLogin();
+						popUp.open(this, true);
+						popUp.label.width = width * 2 / 3;
+						PopUpManager.centerPopUp(popUp);
+
+						if (parentApplication.view_config.activeView != null)
+							parentApplication.view_config.activeView.label.text =
+								resourceManager.getString('localizedContent', 'ConfigurationView_account') + ' ' + parentApplication.persistenceManager.getProperty('login');
+						break;
+				
+					default:
+						displayError('CreateAccountView_serverError');
+						break;
+				}
+			}
+			
+			protected function createAccountView_viewActivateHandler(event:ViewNavigatorEvent):void
+			{
+				// ceci ajoute l'event de telle facon que même hors de cette vue on le traite comme cela :
+				stage.addEventListener(KeyboardEvent.KEY_DOWN, onKeyDown);
+				// ici on rajoute l'event uniquement pour la vue courante (mais ça a semble-t-il des effets de bords désagréables : par ex si on fait apparaître l'indicateur busy et qu'on fait back dans la foulée, ça ne marche pas ! Autre effet de bord : le caractère Back s'affiche dans les saisies mais est qd même pris en compte)
+				//addEventListener(KeyboardEvent.KEY_DOWN, onKeyDown);
+
+//				login.text = FlexGlobals.topLevelApplication.persistenceManager.getProperty("login");
+			}
+			
+			protected function createAccountView_deactivateHandler(event:Event):void
+			{
+				stage.removeEventListener(KeyboardEvent.KEY_DOWN, onKeyDown);
+				CreateUserResult.token = null;
+			}
+
+			protected function onKeyDown(event:KeyboardEvent):void
+			{
+				// trace("CreateAccountView.onKeyDown(): " + event.keyCode);
+				// correction d'un bug du clavier d'un Sony Ericsson XPERIA ST18i Android 2.3.4 noyau 2.6.32.9-perf : quand on appuie pour dire OK, ca envoie un 10 (line feed) qui efface tout ce qu'on a saisi avant le curseur
+				if (event.keyCode == 10) {
+					event.preventDefault();
+					const comp : String = focus_component;
+					if (comp == "login") password.setFocus();
+					if (comp == "password") password2.setFocus();
+					if (comp == "password2") {
+						button.setFocus();
+						stage.focus = null;
+					}
+				}
+				
+				if (busy.visible == false) {
+					if (event.keyCode == Keyboard.BACK)
+					{
+						event.preventDefault();
+						// on ne fait pas popView mais popToFirstView car sinon le fait de cliquer dans login et de faire CTRL-b pour retourner fait qu'on perd toutes les vues (on va vers une vue vide)
+						// on ne perdrait pas si on faisait viewnavigator_login.pushView(views.LoginView) mais la transition serait un glissé vers la droite et non vers la gauche
+						navigator.popToFirstView();
+					} 
+					else if (event.keyCode == Keyboard.MENU) {} 
+					else if (event.keyCode == Keyboard.SEARCH) {}
+				}
+			}
+			
+		]]>
+		
+	</fx:Script>
+
+	<fx:Declarations>
+		<s:CallResponder id="CreateUserResult"/>
+		<jeeserver:Jeeserver id="jeeserver"/>
+		<!-- <mx:RegExpValidator source="{login}" property="text" flags="gmi" expression="\d\{3\}.\d\{2\}.\d\{4\}" noMatchError="Invalid login" trigger="{button}" triggerEvent="click"/> -->
+	</fx:Declarations>
+
+	<s:layout>
+		<s:VerticalLayout paddingTop="0" paddingBottom="0" paddingLeft="0" paddingRight="0" gap="2" 
+						  horizontalAlign="center" verticalAlign="top"/>
+	</s:layout>
+
+	<s:navigationContent>
+		<s:Button id="back" click="navigator.popToFirstView()" alpha=".8" styleName="back"/>
+	</s:navigationContent>
+
+	<s:titleContent>
+		<s:HGroup width="100%" height="100%" horizontalAlign="center" verticalAlign="middle" gap="0">
+			<s:BitmapImage id="text_creer" alpha="{ Main.new_skin ? 1 : .4 }" fillMode="clip"/>
+		</s:HGroup>
+	</s:titleContent>
+	
+	<s:SkinnableContainer width="100%" height="100%" skinClass="net.fenyo.mail4hotspot.gui.MobileSkinnableContainerSkin">
+		<s:Scroller left="5" right="5" top="5" bottom="5" width="100%" height="100%">
+			
+			<s:VGroup id="scrollgroup" paddingLeft="5" paddingRight="5" paddingTop="5" paddingBottom="5" width="100%" height="100%">
+
+				<s:Label fontStyle="italic" textAlpha=".5" color="#FFFFFF" backgroundAlpha=".5" backgroundColor="#080000" width="100%" fontSize="{ parentApplication.headerFontSize }"
+						 text="{ resourceManager.getString('localizedContent', 'CreateAccountView_create_header') }">
+					<s:filters>
+						<s:DropShadowFilter alpha=".5" distance="3" angle="45"/>
+					</s:filters>
+				</s:Label>
+
+				<s:Label width="100%" fontSize="{ parentApplication.labelFontSize }"
+						 text="{ resourceManager.getString('localizedContent', 'CreateAccountView_create_login') }"/>
+				<s:Label width="100%" fontSize="{ parentApplication.smallLabelFontSize }"
+						 text="{ resourceManager.getString('localizedContent', 'CreateAccountView_create_login_small') }"/>
+
+				<s:TextInput id="login" focusIn="{ focus_component = 'login' }"
+							 enter="stage.focus = null; password.setFocus()"
+							 width="100%" textAlign="left" skinClass="spark.skins.mobile.TextInputSkin" contentBackgroundAlpha=".8"/>
+
+				<s:Rect height="4"/>
+				<s:Line width="100%">
+					<s:stroke><s:SolidColorStroke color="0x000000" weight="1" joints="miter"/></s:stroke>
+				</s:Line>
+				
+				<s:Label width="100%" fontSize="{ parentApplication.labelFontSize }"
+						 text="{ resourceManager.getString('localizedContent', 'CreateAccountView_create_password') }"/>
+				<s:Label width="100%" fontSize="{ parentApplication.smallLabelFontSize }"
+						 text="{ resourceManager.getString('localizedContent', 'CreateAccountView_create_password_small') }"/>
+
+				<!-- displayAsPassword="true" fait qu'en saisissant un premier caractère, le champ se remplit avec d'autres caractères ! -->
+				<s:TextInput id="password" focusIn="{ focus_component = 'password' }"
+							 enter="stage.focus = null; password2.setFocus()"
+							 displayAsPassword="false" textAlign="left" width="100%" skinClass="spark.skins.mobile.TextInputSkin" contentBackgroundAlpha=".8"/>
+
+				<s:Rect height="4"/>
+				<s:Line width="100%">
+					<s:stroke><s:SolidColorStroke color="0x000000" weight="1" joints="miter"/></s:stroke>
+				</s:Line>
+				
+				<s:Label width="100%" fontSize="{ parentApplication.labelFontSize }"
+						 text="{ resourceManager.getString('localizedContent', 'CreateAccountView_create_password2') }"/>
+				
+				<!-- displayAsPassword="true" fait qu'en saisissant un premier caractère, le champ se remplit avec d'autres caractères ! -->
+				<s:TextInput id="password2" focusIn="{ focus_component = 'password2' }"
+							 enter="stage.focus = null; button.setFocus()"
+							 displayAsPassword="false" textAlign="left" width="100%" skinClass="spark.skins.mobile.TextInputSkin" contentBackgroundAlpha=".8"/>
+				
+				<s:Rect height="4"/>
+				<s:Line width="100%">
+					<s:stroke><s:SolidColorStroke color="0x000000" weight="1" joints="miter"/></s:stroke>
+				</s:Line>
+
+				<s:Label width="100%" fontSize="{ parentApplication.labelFontSize }"
+						 text="{ resourceManager.getString('localizedContent', 'CreateAccountView_create_button_text') }"/>
+				<s:Label width="100%" fontSize="{ parentApplication.smallLabelFontSize }"
+						 text="{ resourceManager.getString('localizedContent', 'CreateAccountView_create_button_small') }"/>
+
+				<s:Button id="button" width="100%"
+					  label="{ resourceManager.getString('localizedContent', 'CreateAccountView_create_button') }"
+					  click="button_clickHandler(event)">
+					<s:filters>
+						<s:DropShadowFilter alpha=".5" distance="3" angle="45"/>
+					</s:filters>
+				</s:Button>
+
+				<s:VGroup width="100%" horizontalAlign="center">
+					<s:BusyIndicator id="busy" visible="false" enabled="true" includeInLayout="false"
+									 rotationInterval="200" symbolColor="blue"/>
+				</s:VGroup>
+
+				<s:Rect height="4"/>
+		<s:Line id="line" visible="false" includeInLayout="false" width="100%">
+		<s:stroke><s:SolidColorStroke color="0x000000" weight="1" joints="miter"/></s:stroke>
+	</s:Line>
+	<s:Label id="errorLabel" visible="false" width="100%" color="#CE0000" includeInLayout="false"
+			 text="{ resourceManager.getString('localizedContent', 'CreateAccountView_error') }"
+			 textAlign="center"/>
+
+			</s:VGroup>
+		</s:Scroller>
+	</s:SkinnableContainer>
+
+</s:View>
