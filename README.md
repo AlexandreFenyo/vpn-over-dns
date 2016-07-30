@@ -5,7 +5,7 @@ Open-source tunneling software over DNS:
 - GUI and command-line clients for:
   - Android,
   - Windows,
-  - Mac OS X
+  - Mac OS X,
   - Unix/Linux
 
 More than 20000 lines of Java, Adobe Flex action scripts and Perl scripts.
