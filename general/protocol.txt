@@ -52,7 +52,7 @@ sz pour size
 CCCCCCCC entre 00000000 et 99999999
 réponse : 
 1 IP de 3 octets : 0.X.Y.Z
-XYZ forment un nombre sur 2^24 bits donc inclus dans [0, 16777215]
+XYZ forment un nombre sur 24 bits donc inclus dans [0, 16777215]
 on les écrit toujours avec 2 lettres, un tiret et 8 les chiffres : id-00000000
 
 les mgids de 0 à 255 sont réservés
